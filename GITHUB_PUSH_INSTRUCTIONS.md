@@ -1,73 +1,91 @@
-# SurakshaEdge — GitHub Publishing & Railway Deployment Guide
+# SurakshaEdge — GitHub & Render Deployment Guide
 
-## Step 1: Create GitHub Repository
+## ✅ GitHub — ALREADY DONE
+**Repo URL:** https://github.com/shambhushekharsinha-engg/SurakshaEdge  
+**Visibility:** Public  
+**Branch:** `main` (2 commits)
 
-1. Go to: **https://github.com/new**
-2. Fill in:
-   - **Repository name:** `SurakshaEdge`
-   - **Description:** `Edge AI safety sentinel — SEVA FIRST 2026 | REG-008-OP-024 | GNIOT`
-   - **Visibility:** Public
-   - ⚠️ **DO NOT** check "Add a README" or "Add .gitignore" (we have both)
-3. Click **Create repository**
+---
 
-## Step 2: Push Code to GitHub
+## ☁️ Render Deployment (Free Forever — No Credit Card)
 
-Run these commands in PowerShell from `C:\SurakshaEdge\surakshaedge\`:
+### Why Render (not Railway)?
+| Feature | Render Free | Railway Free |
+|---|---|---|
+| Duration | **Forever** | 30-day trial only |
+| Credit card | Not required | Required |
+| Sleep after inactivity | 15 min (wakes in ~30s) | No |
+| Region | Singapore (closest to India) | Auto |
+
+---
+
+### Step 1 — Deploy on Render
+
+**Option A — One-Click Deploy Button (Easiest):**
+
+Click: https://render.com/deploy?repo=https://github.com/shambhushekharsinha-engg/SurakshaEdge
+
+1. Sign in with GitHub (use `shambhushekharsinha-engg`)
+2. Render reads `render.yaml` automatically
+3. Click **Apply** — build takes ~3-5 minutes
+
+**Option B — Manual Setup:**
+
+1. Go to https://dashboard.render.com → **New** → **Web Service**
+2. Connect GitHub → select `shambhushekharsinha-engg/SurakshaEdge`
+3. Fill in:
+   - **Name:** `surakshaedge`
+   - **Region:** Singapore
+   - **Branch:** `main`
+   - **Runtime:** Python 3
+   - **Build Command:** `pip install -r requirements.txt`
+   - **Start Command:** `uvicorn main:app --host 0.0.0.0 --port $PORT`
+   - **Plan:** Free
+4. Add Environment Variables:
+   | Key | Value |
+   |---|---|
+   | `SURAKSHA_API_TOKEN` | `demo-token` |
+   | `SURAKSHA_CONFIG` | `configs/demo.yaml` |
+   | `SURAKSHA_PRODUCTION` | `false` |
+   | `SURAKSHA_KEY` | *(click "Generate" in Render)* |
+5. Click **Create Web Service**
+
+---
+
+### Step 2 — Verify Deployment
+
+After ~3-5 minutes, your live URL will be:
+`https://surakshaedge.onrender.com` (or `https://surakshaedge-XXXX.onrender.com`)
+
+Test these URLs:
+- `https://YOUR_RENDER_URL/health` → `{"status":"ok","audio_mode":"energy_fallback",...}`
+- `https://YOUR_RENDER_URL/` → Dashboard loads with GNIOT campus map
+- Click **🚨 Simulate ALERT** → Red pin appears on map
+
+> Note: `audio_mode` will show `energy_fallback` on Render (no mic hardware in cloud).  
+> Say in pitch: "Cloud API instance; local edge node uses MFCC-CNN ACTIVE mode."
+
+---
+
+### Step 3 — Get Your Live Demo URL for Screen 2 Submission
+
+Paste in Screen 2 Portal → Point 2 (Live Demo URL):
+```
+GitHub: https://github.com/shambhushekharsinha-engg/SurakshaEdge
+Live Demo: https://surakshaedge.onrender.com
+```
+
+---
+
+## Future Updates — Push Changes
 
 ```powershell
 cd C:\SurakshaEdge\surakshaedge
-
-# Add GitHub as the remote origin (replace YOUR_USERNAME with your GitHub username)
-git remote add origin https://github.com/YOUR_USERNAME/SurakshaEdge.git
-
-# Set main branch and push
-git branch -M main
-git push -u origin main
+git add -A
+git commit -m "your message"
+git push origin main
 ```
-
-> **If asked for credentials:** Use your GitHub username and a [Personal Access Token](https://github.com/settings/tokens) (classic, with `repo` scope) as the password.
-
-## Step 3: Deploy on Railway (Free Tier)
-
-1. Go to: **https://railway.app** → Sign in with GitHub
-2. Click **New Project** → **Deploy from GitHub repo**
-3. Select the `SurakshaEdge` repository
-4. Railway auto-detects `Procfile` and starts the build
-5. Set the following **Environment Variables** in Railway Settings:
-
-| Variable | Value | Note |
-|---|---|---|
-| `SURAKSHA_API_TOKEN` | `demo-token` | Bearer token for API |
-| `SURAKSHA_KEY` | *(generated below)* | AES-256 encryption key |
-| `SURAKSHA_CONFIG` | `configs/demo.yaml` | Config file path |
-| `SURAKSHA_PRODUCTION` | `false` | Keeps /simulate endpoint enabled |
-
-**Generate SURAKSHA_KEY** (run this locally, copy the output):
-```powershell
-python -c "import os,base64; print(base64.b64encode(os.urandom(32)).decode())"
-```
-
-6. Click **Deploy** — Railway builds and starts the app in ~2-3 minutes
-7. Click the generated Railway URL (e.g., `https://surakshaedge-production.up.railway.app`)
-8. The dashboard will load with the GNIOT campus map!
-
-## Step 4: Share the Live Demo URL
-
-After deployment:
-- **Dashboard URL:** `https://your-app-name.up.railway.app`
-- Share this URL in the SEVA FIRST Screen 2 submission form as the **Live Demo Link**
-- The dashboard shows the Leaflet map, Sim ALERT/ADVISORY buttons, real-time WebSocket updates
-
-## Note on the Edge Pipeline
-
-The deployed Railway instance runs only the **API + Dashboard** (no webcam/camera needed).
-The **edge ML pipeline** (YOLOv8 + MFCC-CNN) runs locally on your laptop and POSTs events to the API.
-
-For the submission video:
-1. Start the API locally: `.\scripts\start_api.ps1`
-2. Open `http://127.0.0.1:8000` for the demo (or the Railway URL)
-3. Run: `python scripts/demo_injector.py --url http://127.0.0.1:8000 --token demo-token`
-4. Record with OBS Studio / Loom / Camtasia
+Render auto-deploys on every push to `main`.
 
 ---
-*SurakshaEdge | Team SingleThread | GNIOT, Knowledge Park II, Greater Noida | SEVA FIRST 2026*
+*SurakshaEdge | Team SingleThread | GNIOT, Greater Noida | SEVA FIRST 2026 | REG-008-OP-024*
