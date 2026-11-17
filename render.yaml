@@ -2,11 +2,13 @@ services:
   - type: web
     name: surakshaedge
     runtime: python
-    region: singapore  # closest free region to India
+    region: singapore
     plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
       - key: SURAKSHA_API_TOKEN
         value: demo-token
       - key: SURAKSHA_CONFIG
@@ -14,5 +16,5 @@ services:
       - key: SURAKSHA_PRODUCTION
         value: "false"
       - key: SURAKSHA_KEY
-        generateValue: true   # Render auto-generates a random secret
+        generateValue: true
     healthCheckPath: /health
