@@ -241,7 +241,7 @@ async def simulate(sim: SimulateIn, token: str = Depends(require_token)):
     event_id = str(uuid.uuid4())
     ts_utc = datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00", "Z")
     cam = next((c for c in _cameras if c["id"] == sim.camera_id), None)
-    gps = cam["gps"] if cam else {"lat": 28.4744, "lon": 77.5040}
+    gps = cam["gps"] if cam else {"lat": 28.4600, "lon": 77.4952}
 
     event_dict = {
         "event_id": event_id,
@@ -276,16 +276,14 @@ async def get_zones() -> Dict[str, Any]:
         "zones": [
             {
                 "id": "gniot-campus",
-                "name": "GNIOT Campus — Monitored Zone",
+                "name": "GNIOT Campus — Knowledge Park II",
                 "color": "#3b82f6",
                 "opacity": 0.15,
                 "polygon": [
-                    [28.4760, 77.5020],
-                    [28.4760, 77.5060],
-                    [28.4744, 77.5075],
-                    [28.4728, 77.5060],
-                    [28.4728, 77.5020],
-                    [28.4744, 77.5005],
+                    [28.4625, 77.4940],
+                    [28.4625, 77.4975],
+                    [28.4575, 77.4975],
+                    [28.4575, 77.4940],
                 ],
             },
             {
@@ -294,10 +292,10 @@ async def get_zones() -> Dict[str, Any]:
                 "color": "#ef4444",
                 "opacity": 0.10,
                 "polygon": [
-                    [28.4748, 77.5035],
-                    [28.4748, 77.5045],
-                    [28.4740, 77.5045],
-                    [28.4740, 77.5035],
+                    [28.4606, 77.4946],
+                    [28.4606, 77.4958],
+                    [28.4594, 77.4958],
+                    [28.4594, 77.4946],
                 ],
             },
         ]

@@ -2,18 +2,18 @@ cameras:
   - id: gate-1
     source: 0
     audio_source: null
-    gps: [28.4744, 77.5040]
-    zone: Main Gate
+    gps: [28.4600, 77.4952]
+    zone: Main Gate (Knowledge Park II)
   - id: gate-2
     source: null
     audio_source: null
-    gps: [28.4755, 77.5050]
-    zone: North Entrance
+    gps: [28.4614, 77.4960]
+    zone: Academic Block / North Gate
   - id: gate-3
     source: null
     audio_source: null
-    gps: [28.4733, 77.5030]
-    zone: South Exit
+    gps: [28.4586, 77.4950]
+    zone: Hostel / South Exit
 
 vision:
   model: models/yolov8n-pose.pt   # nano model for CPU
