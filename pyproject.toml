@@ -1,0 +1,57 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "surakshaedge"
+version = "0.1.0"
+description = "Edge-based assault detection and alert system — SEVA FIRST 2026"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "AGPL-3.0"
+authors = [
+  {name = "Shambhu Shekhar Sinha"},
+  {name = "Vaibhav Kumar Tiwari"},
+]
+keywords = ["safety", "edge-ai", "computer-vision", "pose-estimation"]
+
+dependencies = [
+  "ultralytics>=8.1",
+  "opencv-python>=4.9",
+  "numpy>=1.26",
+  "scipy>=1.12",
+  "librosa>=0.10",
+  "soundfile>=0.12",
+  "sounddevice>=0.4",
+  "onnx>=1.16",
+  "onnxruntime>=1.17",
+  "fastapi>=0.110",
+  "uvicorn[standard]>=0.29",
+  "websockets>=12",
+  "pydantic>=2.6",
+  "cryptography>=42",
+  "psutil>=5.9",
+  "pyyaml>=6.0",
+  "requests>=2.31",
+  "pandas>=2.2",
+  "matplotlib>=3.8",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-cov>=5", "ruff>=0.4", "locust>=2.24", "scikit-learn>=1.4"]
+gpu = ["onnxruntime-gpu>=1.17"]
+
+[project.scripts]
+surakshaedge-pipeline = "surakshaedge.edge.pipeline:main"
+
+[tool.setuptools.packages.find]
+where = [".."]
+include = ["surakshaedge*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts   = "-v --tb=short"
+
+[tool.ruff]
+line-length    = 100
+target-version = "py310"

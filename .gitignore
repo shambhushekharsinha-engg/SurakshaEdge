@@ -1,0 +1,25 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.env
+data/raw/
+data/clips/
+data/audio/
+*.mp4
+*.wav
+*.engine
+results/tmp/
+results/events.db
+results/audit.jsonl
+models/*.pt
+# audio_cnn.onnx IS committed for cloud deployment (110KB — well under GitHub limit)
+models/*.engine
+models/yolov8*.onnx
+# yolov8n-pose.pt is 6.5MB — small enough but excluded to avoid binary blobs in git
+# Download it at runtime: python -c "from ultralytics import YOLO; YOLO('yolov8n-pose.pt')"
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+docs/ENVIRONMENT.md

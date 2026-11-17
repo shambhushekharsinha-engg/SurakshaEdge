@@ -1,0 +1,45 @@
+cameras:
+  - id: gate-1
+    source: 0
+    audio_source: null
+    gps: [28.4744, 77.5040]
+    zone: Main Gate
+  - id: gate-2
+    source: null
+    audio_source: null
+    gps: [28.4755, 77.5050]
+    zone: North Entrance
+  - id: gate-3
+    source: null
+    audio_source: null
+    gps: [28.4733, 77.5030]
+    zone: South Exit
+
+vision:
+  model: models/yolov8n-pose.pt   # nano model for CPU
+  imgsz: 320
+  weights:
+    V_w: 0.4
+    A_j: 0.3
+    Q_p: 0.3
+  k_threshold: 0.62
+  k_persist_s: 0.4
+
+audio:
+  model: models/audio_cnn.onnx   # trained MFCC-CNN; set to null to use energy_fallback
+  s_threshold: 0.70
+  window_s: 1.0
+  hop_s: 0.25
+
+fusion:
+  gate_s: 1.5
+  cooldown_s: 10
+
+privacy:
+  buffer_s: 5
+  retention_hours: 24
+  blur_faces: false
+
+api:
+  host: 127.0.0.1
+  port: 8000

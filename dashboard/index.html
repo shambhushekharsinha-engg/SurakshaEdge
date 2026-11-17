@@ -1,0 +1,2337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>SurakshaEdge — Edge AI Safety Sentinel</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    /* ===== RESET & BASE ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:       #0f172a;
+      --panel:    #1e293b;
+      --card:     #1e293b;
+      --card2:    #263148;
+      --border:   #334155;
+      --blue:     #3b82f6;
+      --blue-lt:  #60a5fa;
+      --red:      #ef4444;
+      --amber:    #f97316;
+      --green:    #22c55e;
+      --text:     #e2e8f0;
+      --muted:    #64748b;
+      --subtle:   #94a3b8;
+      --sidebar-w: 390px;
+      --header-h:  58px;
+      --statsbar-h: 36px;
+      --hud-h:     40px;
+    }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ===== SCROLLBAR ===== */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+
+    /* ===== ANIMATIONS ===== */
+    @keyframes pulse-green { 0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,.7)} 70%{box-shadow:0 0 0 7px rgba(34,197,94,0)} }
+    @keyframes pulse-red   { 0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.7)}  70%{box-shadow:0 0 0 7px rgba(239,68,68,0)}  }
+    @keyframes pulse-amber { 0%,100%{box-shadow:0 0 0 0 rgba(249,115,22,.7)} 70%{box-shadow:0 0 0 7px rgba(249,115,22,0)} }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.35} }
+    @keyframes strobe { 0%,100%{opacity:0} 10%,30%,50%{opacity:.75} 20%,40%{opacity:0} }
+    @keyframes slideInRight { from{transform:translateX(100%)} to{transform:translateX(0)} }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:none} }
+    @keyframes spin { to{transform:rotate(360deg)} }
+    @keyframes camAlert { 0%,100%{filter:drop-shadow(0 0 0 #ef4444)} 50%{filter:drop-shadow(0 0 10px #ef4444)} }
+    @keyframes livePulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(0.85)} }
+    @keyframes barShimmer { 0%{background-position:200% center} 100%{background-position:-200% center} }
+    @keyframes gateAlert { 0%,100%{background:rgba(239,68,68,.15);} 50%{background:rgba(239,68,68,.35);} }
+
+    /* ===== HEADER ===== */
+    #app-header {
+      height: var(--header-h);
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 16px;
+      flex-shrink: 0;
+      z-index: 100;
+    }
+    .header-brand {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+    .header-title {
+      font-size: 1.08rem;
+      font-weight: 800;
+      color: var(--blue-lt);
+      letter-spacing: .3px;
+      white-space: nowrap;
+      line-height: 1.2;
+    }
+    .header-subtitle {
+      font-size: .62rem;
+      color: var(--muted);
+      letter-spacing: .4px;
+      white-space: nowrap;
+    }
+    .live-badge {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(34,197,94,.12);
+      border: 1px solid rgba(34,197,94,.35);
+      border-radius: 999px;
+      padding: 3px 9px 3px 7px;
+      flex-shrink: 0;
+    }
+    .live-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: livePulse 1.5s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+    .live-text {
+      font-size: .65rem;
+      font-weight: 800;
+      color: var(--green);
+      letter-spacing: 1px;
+    }
+    .ws-badge {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex-shrink: 0;
+    }
+    .status-dot {
+      width: 9px; height: 9px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      background: var(--red);
+      animation: pulse-red 2s infinite;
+    }
+    .status-dot.connected {
+      background: var(--green);
+      animation: pulse-green 2s infinite;
+    }
+    .conn-label { font-size: .7rem; color: var(--muted); white-space: nowrap; }
+    .ws-events-label { font-size: .62rem; color: var(--muted); white-space: nowrap; }
+    .header-badge {
+      display: none;
+      font-size: .65rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .badge-fallback { background: #7c2d12; color: #fed7aa; }
+    .badge-mfcc     { background: #064e3b; color: #6ee7b7; }
+    .badge-cams     { background: var(--card); border: 1px solid var(--border); color: var(--subtle); }
+    .header-spacer  { flex: 1; }
+    .header-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--subtle);
+      border-radius: 6px;
+      padding: 4px 9px;
+      font-size: .78rem;
+      cursor: pointer;
+      transition: background .15s, color .15s;
+      display: flex; align-items: center; gap: 4px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .header-btn:hover  { background: var(--card2); color: var(--text); }
+    .header-btn.active { background: var(--card2); color: var(--blue); border-color: var(--blue); }
+    #mute-btn.muted    { color: var(--amber); border-color: var(--amber); }
+
+    /* ===== STATS BAR ===== */
+    #stats-bar {
+      height: var(--statsbar-h);
+      background: #0f1826;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0;
+      padding: 0 14px;
+      flex-shrink: 0;
+      font-size: .68rem;
+      color: var(--muted);
+      overflow-x: auto;
+    }
+    .stat-item { display: flex; align-items: center; gap: 5px; padding: 0 12px 0 0; white-space: nowrap; }
+    .stat-item:not(:last-child) { border-right: 1px solid var(--border); margin-right: 12px; }
+    .stat-val { color: var(--subtle); font-weight: 700; font-size: .72rem; }
+    .stat-badge {
+      font-size: .62rem; font-weight: 700; padding: 1px 7px;
+      border-radius: 999px; white-space: nowrap;
+    }
+    .stat-badge.green  { background: rgba(34,197,94,.18); color: var(--green); border: 1px solid rgba(34,197,94,.3); }
+    .stat-badge.amber  { background: rgba(249,115,22,.18); color: var(--amber); border: 1px solid rgba(249,115,22,.3); }
+    .stat-badge.blue   { background: rgba(59,130,246,.18); color: var(--blue-lt); border: 1px solid rgba(59,130,246,.3); }
+    .stat-badge.muted  { background: rgba(100,116,139,.18); color: var(--subtle); border: 1px solid rgba(100,116,139,.3); }
+    #stat-fps-val, #stat-lat-val { font-weight: 700; color: var(--blue-lt); }
+
+    /* ===== MAIN LAYOUT ===== */
+    #main {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* ===== MAP AREA ===== */
+    #map-wrap {
+      flex: 1;
+      position: relative;
+      min-width: 0;
+    }
+    #map { width: 100%; height: 100%; }
+
+    /* map controls panel */
+    #map-controls {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 500;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .map-ctrl-btn {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: .75rem;
+      cursor: pointer;
+      display: flex; align-items: center; gap: 5px;
+      transition: background .15s;
+      white-space: nowrap;
+    }
+    .map-ctrl-btn:hover { background: var(--card2); }
+
+    /* ===== SIDEBAR TOGGLE (desktop) ===== */
+    #sidebar-toggle {
+      position: absolute;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 400;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-right: none;
+      color: var(--subtle);
+      padding: 10px 5px;
+      cursor: pointer;
+      border-radius: 6px 0 0 6px;
+      font-size: .85rem;
+      line-height: 1;
+      transition: color .15s;
+    }
+    #sidebar-toggle:hover { color: var(--blue); }
+
+    /* ===== SIDEBAR ===== */
+    #sidebar {
+      width: var(--sidebar-w);
+      background: var(--panel);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      flex-shrink: 0;
+      transition: width .25s, opacity .25s;
+    }
+    #sidebar.collapsed {
+      width: 0;
+      opacity: 0;
+      border-left: none;
+    }
+
+    /* ===== SCORE GAUGE PANEL ===== */
+    #score-panel {
+      background: #0d1626;
+      border-bottom: 1px solid var(--border);
+      padding: 10px 14px;
+      flex-shrink: 0;
+    }
+    .score-panel-title {
+      font-size: .68rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      margin-bottom: 8px;
+    }
+    .score-gauge-row {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+    .gauge-item { }
+    .gauge-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 3px;
+    }
+    .gauge-name { font-size: .7rem; color: var(--subtle); font-weight: 600; }
+    .gauge-val  { font-size: .78rem; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
+    .gauge-bg   { height: 7px; background: #0f1826; border-radius: 4px; overflow: hidden; }
+    .gauge-fill { height: 100%; border-radius: 4px; transition: width .4s ease, background .4s; }
+    .gauge-fill.kt { background: var(--blue); }
+    .gauge-fill.st { background: var(--green); }
+
+    /* Gate status */
+    .gate-status-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+    }
+    .gate-status-label { font-size: .68rem; color: var(--muted); }
+    .gate-status-badge {
+      font-size: .72rem;
+      font-weight: 800;
+      padding: 2px 10px;
+      border-radius: 999px;
+      letter-spacing: .5px;
+      transition: all .3s;
+    }
+    .gate-status-badge.normal   { background: rgba(34,197,94,.15); color: var(--green); border: 1px solid rgba(34,197,94,.3); }
+    .gate-status-badge.advisory { background: rgba(249,115,22,.15); color: var(--amber); border: 1px solid rgba(249,115,22,.3); }
+    .gate-status-badge.alert    { background: rgba(239,68,68,.2); color: var(--red); border: 1px solid rgba(239,68,68,.4); animation: gateAlert 1s ease-in-out infinite; }
+
+    /* ===== CAMERA CARDS ===== */
+    #camera-cards {
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .cam-cards-title {
+      font-size: .66rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      margin-bottom: 6px;
+    }
+    .cam-cards-grid {
+      display: flex;
+      gap: 6px;
+    }
+    .cam-card {
+      flex: 1;
+      background: #0d1626;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 7px 8px;
+      transition: border-color .3s;
+    }
+    .cam-card.cam-alert    { border-color: var(--red); }
+    .cam-card.cam-advisory { border-color: var(--amber); }
+    .cam-card-top {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-bottom: 3px;
+    }
+    .cam-status-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--muted);
+      flex-shrink: 0;
+      transition: background .3s;
+    }
+    .cam-status-dot.idle     { background: var(--green); }
+    .cam-status-dot.advisory { background: var(--amber); animation: pulse-amber 2s infinite; }
+    .cam-status-dot.alert    { background: var(--red);   animation: pulse-red 1s infinite; }
+    .cam-card-id   { font-size: .65rem; font-weight: 700; color: var(--blue-lt); }
+    .cam-card-zone { font-size: .6rem; color: var(--muted); }
+    .cam-card-gps  { font-size: .58rem; color: #475569; margin-top: 1px; }
+
+    /* feed header */
+    .feed-header {
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .feed-title { font-size: .82rem; font-weight: 700; color: var(--blue-lt); }
+    #feed-count {
+      background: var(--red);
+      color: #fff;
+      font-size: .65rem;
+      font-weight: 700;
+      padding: 1px 7px;
+      border-radius: 999px;
+      display: none;
+    }
+    .feed-clear-btn {
+      margin-left: auto;
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: .7rem;
+      padding: 2px 9px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: border-color .15s, color .15s;
+    }
+    .feed-clear-btn:hover { border-color: var(--blue); color: var(--blue); }
+
+    /* alert feed */
+    #alert-feed {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+    }
+    .no-events {
+      text-align: center;
+      color: #334155;
+      padding: 40px 20px;
+      font-size: .82rem;
+      line-height: 1.6;
+    }
+    .alert-card {
+      background: #0d1626;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 7px;
+      border-left: 4px solid #334155;
+      cursor: pointer;
+      transition: background .15s, transform .1s;
+      animation: fadeIn .2s ease;
+      position: relative;
+    }
+    .alert-card:hover { background: #122040; transform: translateX(2px); }
+    .alert-card.ALERT    { border-color: var(--red); }
+    .alert-card.ADVISORY { border-color: var(--amber); }
+    .alert-card .card-top {
+      display: flex; align-items: center; gap: 6px; margin-bottom: 5px;
+    }
+    .tier-badge {
+      font-size: .61rem; font-weight: 800; letter-spacing: .8px;
+      padding: 2px 7px; border-radius: 999px;
+    }
+    .ALERT    .tier-badge { background: rgba(239,68,68,.2);  color: var(--red);   border: 1px solid rgba(239,68,68,.4); }
+    .ADVISORY .tier-badge { background: rgba(249,115,22,.2); color: var(--amber); border: 1px solid rgba(249,115,22,.4); }
+    .card-cam  { font-size: .8rem; font-weight: 600; color: #e2e8f0; }
+    .card-zone { font-size: .68rem; color: var(--muted); }
+    .card-time { font-size: .68rem; color: var(--muted); margin-left: auto; white-space: nowrap; }
+    .card-dismiss {
+      position: absolute; top: 6px; right: 8px;
+      background: none; border: none; color: var(--muted);
+      font-size: .9rem; cursor: pointer; padding: 2px 5px;
+      border-radius: 3px; line-height: 1;
+      transition: color .15s, background .15s;
+    }
+    .card-dismiss:hover { color: var(--text); background: #2d3f60; }
+    .card-scores { display: flex; gap: 10px; margin-top: 5px; }
+    .mini-score { flex: 1; }
+    .mini-score-label {
+      font-size: .61rem; color: var(--muted); margin-bottom: 2px;
+      display: flex; justify-content: space-between;
+    }
+    .mini-bar-bg {
+      height: 4px; background: #0f1826; border-radius: 2px; overflow: hidden;
+    }
+    .mini-bar-fill {
+      height: 100%; border-radius: 2px; transition: width .3s;
+    }
+    .bar-k { background: var(--blue); }
+    .bar-s { background: var(--green); }
+    .card-latency { font-size: .63rem; color: var(--muted); margin-top: 4px; }
+    .card-ack-btn {
+      margin-top: 6px;
+      background: rgba(59,130,246,.12);
+      border: 1px solid rgba(59,130,246,.35);
+      color: var(--blue-lt);
+      font-size: .65rem;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .card-ack-btn:hover { background: rgba(59,130,246,.25); }
+    .card-ack-btn.acked { background: rgba(34,197,94,.12); border-color: rgba(34,197,94,.35); color: var(--green); }
+    .dual-signal-banner {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 5px;
+      padding: 3px 8px;
+      background: rgba(239,68,68,.1);
+      border: 1px solid rgba(239,68,68,.25);
+      border-radius: 4px;
+      font-size: .61rem;
+      color: var(--red);
+      font-weight: 700;
+      letter-spacing: .3px;
+    }
+
+    /* ===== DETAIL PANEL ===== */
+    #detail-panel {
+      background: #0a1120;
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+      max-height: 320px;
+      overflow-y: auto;
+      transition: max-height .25s;
+    }
+    #detail-panel.hidden { max-height: 0; overflow: hidden; }
+    .detail-inner { padding: 14px; }
+    .detail-header {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+    }
+    .detail-title { font-size: .88rem; font-weight: 700; color: var(--blue-lt); flex: 1; }
+    .detail-close {
+      background: none; border: none; color: var(--muted);
+      font-size: 1rem; cursor: pointer; padding: 2px 6px;
+    }
+    .detail-close:hover { color: var(--text); }
+    .score-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;
+    }
+    .score-box { background: var(--card); border-radius: 6px; padding: 8px 12px; border: 1px solid var(--border); }
+    .score-box .s-label { font-size: .66rem; color: var(--muted); margin-bottom: 2px; }
+    .score-box .s-val   { font-size: 1.1rem; font-weight: 700; color: #e2e8f0; }
+    .score-bar-row { margin-bottom: 10px; }
+    .score-bar-row .sb-label {
+      font-size: .7rem; color: var(--muted); margin-bottom: 3px;
+      display: flex; justify-content: space-between;
+    }
+    .score-bar-bg {
+      height: 6px; background: #0f1826; border-radius: 3px; overflow: hidden;
+    }
+    .score-bar-fill { height: 100%; border-radius: 3px; transition: width .3s; }
+    .detail-meta { font-size: .72rem; color: var(--muted); margin-bottom: 10px; line-height: 1.6; }
+    .detail-meta span { color: var(--subtle); }
+    .action-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+    .btn {
+      padding: 6px 13px; border-radius: 6px; border: none;
+      font-size: .78rem; cursor: pointer; font-weight: 600;
+      transition: opacity .15s;
+    }
+    .btn:hover { opacity: .82; }
+    .btn-ack    { background: #1e40af; color: #fff; }
+    .btn-true   { background: #065f46; color: #fff; }
+    .btn-false  { background: #7f1d1d; color: #fff; }
+    .btn-export { background: var(--card); color: var(--subtle); border: 1px solid var(--border); }
+
+    /* ===== DEMO CONTROL PANEL ===== */
+    #demo-panel {
+      border-top: 1px solid var(--border);
+      padding: 10px 12px;
+      flex-shrink: 0;
+      background: #0a1120;
+    }
+    .demo-panel-title {
+      font-size: .66rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .demo-btn-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+    .demo-btn {
+      border: none;
+      border-radius: 7px;
+      padding: 8px 10px;
+      font-size: .75rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity .15s, transform .1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      white-space: nowrap;
+    }
+    .demo-btn:hover { opacity: .88; transform: scale(1.02); }
+    .demo-btn:active { transform: scale(0.97); }
+    .demo-btn.alert    { background: rgba(239,68,68,.2); color: var(--red); border: 1px solid rgba(239,68,68,.5); }
+    .demo-btn.advisory { background: rgba(249,115,22,.2); color: var(--amber); border: 1px solid rgba(249,115,22,.5); }
+    .demo-btn.sequence { background: rgba(59,130,246,.15); color: var(--blue-lt); border: 1px solid rgba(59,130,246,.4); grid-column: 1 / -1; }
+    .demo-btn.clear    { background: rgba(100,116,139,.12); color: var(--subtle); border: 1px solid var(--border); grid-column: 1 / -1; }
+    #demo-seq-status { font-size: .62rem; color: var(--muted); margin-top: 4px; min-height: 14px; text-align: center; }
+
+    /* ===== PRIVACY PANEL (collapsible) ===== */
+    #privacy-panel {
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .privacy-toggle {
+      width: 100%;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: .68rem;
+      font-weight: 600;
+      padding: 7px 14px;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: color .15s;
+    }
+    .privacy-toggle:hover { color: var(--text); }
+    .privacy-toggle .ptgl-arrow { margin-left: auto; transition: transform .2s; }
+    .privacy-toggle.open .ptgl-arrow { transform: rotate(180deg); }
+    .privacy-body {
+      display: none;
+      padding: 6px 14px 10px;
+      border-top: 1px solid var(--border);
+    }
+    .privacy-body.open { display: block; }
+    .privacy-item {
+      font-size: .68rem;
+      color: var(--green);
+      padding: 2px 0;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .privacy-item::before { content: '✓'; font-weight: 700; }
+
+    /* ===== ABOUT PANEL (collapsible) ===== */
+    #about-panel {
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .about-toggle {
+      width: 100%;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: .68rem;
+      font-weight: 600;
+      padding: 7px 14px;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: color .15s;
+    }
+    .about-toggle:hover { color: var(--text); }
+    .about-toggle .atgl-arrow { margin-left: auto; transition: transform .2s; }
+    .about-toggle.open .atgl-arrow { transform: rotate(180deg); }
+    .about-body {
+      display: none;
+      padding: 8px 14px 12px;
+      border-top: 1px solid var(--border);
+    }
+    .about-body.open { display: block; }
+    .about-body ul { list-style: none; padding: 0; margin: 0 0 8px; }
+    .about-body li { font-size: .68rem; color: var(--subtle); padding: 2px 0; display: flex; align-items: flex-start; gap: 5px; line-height: 1.4; }
+    .about-body li::before { content: '•'; color: var(--blue-lt); flex-shrink: 0; margin-top: 1px; }
+    .about-team { font-size: .65rem; color: var(--muted); margin-bottom: 4px; }
+    .about-team strong { color: var(--subtle); }
+    .about-license { font-size: .62rem; color: #475569; }
+
+    /* ===== HUD FOOTER ===== */
+    #hud {
+      height: var(--hud-h);
+      background: #0a1120;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 0 14px;
+      flex-shrink: 0;
+      font-size: .7rem;
+      color: var(--muted);
+      overflow-x: auto;
+    }
+    .hud-item { display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+    .hud-val  { color: var(--subtle); font-weight: 600; }
+    .hud-badge {
+      font-size: .63rem; font-weight: 700; padding: 1px 7px;
+      border-radius: 999px;
+    }
+    .hud-badge.red   { background: rgba(239,68,68,.2);  color: var(--red); }
+    .hud-badge.amber { background: rgba(249,115,22,.2); color: var(--amber); }
+    .hud-sep  { width: 1px; height: 18px; background: var(--border); flex-shrink: 0; }
+    .hud-spacer { flex: 1; }
+
+    /* ===== SETTINGS PANEL ===== */
+    #settings-panel {
+      position: fixed;
+      top: 0; right: 0; bottom: 0;
+      width: 320px;
+      background: var(--panel);
+      border-left: 1px solid var(--border);
+      z-index: 1100;
+      transform: translateX(100%);
+      transition: transform .25s;
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+    #settings-panel.open { transform: translateX(0); animation: slideInRight .25s; }
+    .settings-head {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .settings-head h2 { font-size: .9rem; font-weight: 700; color: var(--blue-lt); flex: 1; }
+    .settings-close {
+      background: none; border: none; color: var(--muted);
+      font-size: 1.1rem; cursor: pointer;
+    }
+    .settings-close:hover { color: var(--text); }
+    .settings-body { flex: 1; overflow-y: auto; padding: 16px; }
+    .settings-section { margin-bottom: 20px; }
+    .settings-section h3 { font-size: .73rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 10px; }
+    .settings-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .settings-label { font-size: .8rem; color: var(--subtle); flex: 1; }
+    .settings-info {
+      background: var(--card); border-radius: 6px; padding: 8px 12px; margin-bottom: 8px; font-size: .78rem; line-height: 1.6; border: 1px solid var(--border);
+    }
+    .settings-info .si-label { color: var(--muted); }
+    .settings-info .si-val   { color: var(--blue-lt); font-weight: 700; }
+    select, input[type=range] { background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 5px; padding: 4px 8px; font-size: .8rem; cursor: pointer; }
+    select:focus, input[type=range]:focus { outline: none; border-color: var(--blue); }
+    .toggle-switch { position: relative; display: inline-block; width: 36px; height: 20px; flex-shrink: 0; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute; inset: 0;
+      background: #334155; border-radius: 20px; cursor: pointer;
+      transition: background .2s;
+    }
+    .toggle-slider::before {
+      content: ''; position: absolute;
+      width: 14px; height: 14px; left: 3px; top: 3px;
+      background: #fff; border-radius: 50%; transition: transform .2s;
+    }
+    .toggle-switch input:checked + .toggle-slider { background: var(--blue); }
+    .toggle-switch input:checked + .toggle-slider::before { transform: translateX(16px); }
+
+    /* ===== HELP MODAL ===== */
+    #help-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.8);
+      z-index: 1200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    #help-overlay.open { display: flex; }
+    .help-modal {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      width: 100%; max-width: 680px;
+      max-height: 90vh;
+      display: flex; flex-direction: column;
+      animation: fadeIn .2s;
+    }
+    .help-head {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .help-head h2 { font-size: 1rem; font-weight: 700; color: var(--blue-lt); flex: 1; }
+    .help-close {
+      background: none; border: none; color: var(--muted);
+      font-size: 1.2rem; cursor: pointer; padding: 2px 6px;
+    }
+    .help-close:hover { color: var(--text); }
+    .help-body { flex: 1; overflow-y: auto; padding: 20px; }
+    .help-section { margin-bottom: 22px; }
+    .help-section h3 {
+      font-size: .82rem; font-weight: 700; color: var(--blue-lt);
+      margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
+    }
+    .help-section p, .help-section li { font-size: .8rem; color: var(--subtle); line-height: 1.65; }
+    .help-section ul { padding-left: 18px; }
+    .help-section li { margin-bottom: 3px; }
+    .help-section code { background: var(--card); padding: 1px 5px; border-radius: 3px; font-size: .78rem; color: var(--blue-lt); }
+    .kbd-grid { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: .79rem; }
+    .kbd { background: var(--card); border: 1px solid var(--border); border-radius: 4px; padding: 2px 8px; font-weight: 700; color: var(--text); text-align: center; }
+
+    /* ===== TOAST ===== */
+    #toast-container {
+      position: fixed; bottom: 60px; left: 50%;
+      transform: translateX(-50%);
+      z-index: 1300;
+      display: flex; flex-direction: column; gap: 6px;
+      align-items: center;
+    }
+    .toast {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 8px; padding: 8px 18px;
+      font-size: .78rem; color: var(--text);
+      animation: fadeIn .2s;
+      white-space: nowrap;
+    }
+
+    /* ===== STROBE OVERLAY ===== */
+    #strobe {
+      position: fixed; inset: 0;
+      background: #fff; opacity: 0;
+      pointer-events: none; z-index: 9999;
+    }
+    #strobe.active { animation: strobe .8s ease-in-out 3; }
+
+    /* ===== MOBILE NAV ===== */
+    #mobile-nav {
+      display: none;
+      position: fixed; bottom: 0; left: 0; right: 0;
+      height: 56px;
+      background: var(--panel);
+      border-top: 1px solid var(--border);
+      z-index: 900;
+    }
+    .mobile-nav-inner {
+      display: flex; height: 100%;
+    }
+    .mobile-nav-btn {
+      flex: 1; background: none; border: none;
+      color: var(--muted); font-size: .65rem;
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 3px; cursor: pointer;
+      transition: color .15s;
+    }
+    .mobile-nav-btn .nav-icon { font-size: 1.2rem; }
+    .mobile-nav-btn.active   { color: var(--blue); }
+    .mobile-nav-btn:hover    { color: var(--text); }
+
+    /* ===== FAB (mobile) ===== */
+    #fab-sim {
+      display: none;
+      position: fixed; bottom: 70px; right: 16px;
+      width: 50px; height: 50px;
+      background: var(--red); color: #fff;
+      border: none; border-radius: 50%;
+      font-size: 1.3rem; cursor: pointer;
+      box-shadow: 0 4px 16px rgba(0,0,0,.5);
+      z-index: 920;
+      transition: transform .1s, background .15s;
+    }
+    #fab-sim:hover { transform: scale(1.08); background: #dc2626; }
+
+    /* ===== RESPONSIVE — MOBILE ===== */
+    @media (max-width: 767px) {
+      :root { --header-h: 50px; --statsbar-h: 0px; --hud-h: 0px; }
+
+      #hud { display: none; }
+      #stats-bar { display: none; }
+      #sidebar { display: none !important; }
+      #sidebar-toggle { display: none; }
+      #map-controls { top: 6px; right: 6px; }
+
+      #main { flex-direction: column; }
+      #map-wrap {
+        height: 45vh;
+        flex: none;
+      }
+
+      #mobile-nav  { display: block; }
+      #fab-sim     { display: flex; align-items: center; justify-content: center; }
+
+      /* mobile feed view */
+      #mobile-feed-view {
+        flex: 1; background: var(--bg);
+        display: flex; flex-direction: column;
+        overflow: hidden;
+        padding-bottom: 56px;
+      }
+      #mobile-feed-view .feed-header { flex-shrink: 0; }
+      #mobile-feed-view #mobile-alert-feed {
+        flex: 1; overflow-y: auto; padding: 8px;
+      }
+
+      body.tab-map  #mobile-feed-view { display: none; }
+      body.tab-feed #map-wrap         { display: none; }
+      body.tab-feed #mobile-feed-view { display: flex; }
+    }
+    @media (min-width: 768px) {
+      #mobile-feed-view { display: none; }
+    }
+
+    /* map popup custom */
+    .leaflet-popup-content-wrapper {
+      background: var(--panel);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    .leaflet-popup-tip { background: var(--panel); }
+    .leaflet-popup-content { font-size: .8rem; line-height: 1.5; }
+    .popup-tier-alert    { color: var(--red);   font-weight: 700; }
+    .popup-tier-advisory { color: var(--amber); font-weight: 700; }
+    /* Zone polygon labels */
+    .zone-label {
+      background: rgba(10, 14, 26, 0.75);
+      border: 1px solid rgba(59, 130, 246, 0.4);
+      border-radius: 4px;
+      color: #93c5fd;
+      font-size: .65rem;
+      font-weight: 600;
+      letter-spacing: .04em;
+      padding: 2px 6px;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+    .zone-label::before { display: none; }
+  </style>
+</head>
+<body class="tab-map">
+
+<!-- ===== STROBE ===== -->
+<div id="strobe"></div>
+
+<!-- ===== HEADER ===== -->
+<header id="app-header">
+  <div class="header-brand">
+    <div class="header-title">🛡 SurakshaEdge — Edge AI Safety Sentinel</div>
+    <div class="header-subtitle">GNIOT × SEVA FIRST 2026 | REG-008-OP-024 | Team SingleThread</div>
+  </div>
+  <div class="live-badge" style="margin-left:8px;">
+    <div class="live-dot"></div>
+    <span class="live-text">LIVE</span>
+  </div>
+  <div class="ws-badge" style="margin-left:8px;">
+    <div class="status-dot" id="status-dot"></div>
+    <span class="conn-label" id="conn-label">Connecting…</span>
+  </div>
+  <span class="ws-events-label" id="ws-events-label" style="display:none;">· <span id="ws-events-count">0</span> events</span>
+  <span class="header-badge badge-fallback" id="badge-fallback" title="MFCC-CNN not loaded. S_t responds to ANY loud sound.">⚠ ENERGY FALLBACK</span>
+  <span class="header-badge badge-mfcc" id="badge-mfcc">🧠 MFCC-CNN</span>
+  <span class="header-badge badge-cams" id="badge-cams">📷 0 cams</span>
+  <div class="header-spacer"></div>
+  <button class="header-btn" id="mute-btn" onclick="muteToggle()" title="Toggle siren (M)">🔊 Sound</button>
+  <button class="header-btn" onclick="openSettings()" title="Settings (,)">⚙</button>
+  <button class="header-btn" onclick="openHelp()" title="Help (H)">?</button>
+</header>
+
+<!-- ===== STATS BAR ===== -->
+<div id="stats-bar">
+  <div class="stat-item">
+    <span>FPS</span>
+    <span class="stat-val" id="stat-fps-val">18.0</span>
+    <span class="stat-badge blue">CPU</span>
+  </div>
+  <div class="stat-item">
+    <span>Latency</span>
+    <span class="stat-val" id="stat-lat-val">55ms</span>
+    <span style="color:var(--muted);font-size:.62rem;">p50</span>
+  </div>
+  <div class="stat-item">
+    <span>Audio Mode</span>
+    <span class="stat-badge green" id="stat-audio-badge">MFCC-CNN ACTIVE</span>
+  </div>
+  <div class="stat-item">
+    <span>Tests</span>
+    <span class="stat-badge green">48/48 PASSED ✓</span>
+  </div>
+  <div class="stat-item">
+    <span class="stat-badge muted">🔒 ZERO-PERSIST RAM</span>
+  </div>
+</div>
+
+<!-- ===== MAIN ===== -->
+<div id="main">
+
+  <!-- MAP WRAP -->
+  <div id="map-wrap">
+    <div id="map"></div>
+
+    <!-- Map controls -->
+    <div id="map-controls">
+      <button class="map-ctrl-btn" onclick="clearAlertMarkers()" title="Clear alert pins">🗺 Clear Alerts</button>
+      <button class="map-ctrl-btn" onclick="showAllCameras()" title="Zoom to all cameras">📍 All Cameras</button>
+      <button class="map-ctrl-btn" onclick="showZoneInfo()" title="Zone info">🔍 Zone Info</button>
+      <button class="map-ctrl-btn" id="tile-toggle-btn" onclick="toggleTile()">🌙 Dark Tile</button>
+    </div>
+
+    <!-- Sidebar collapse toggle (desktop only) -->
+    <button id="sidebar-toggle" onclick="toggleSidebar()" title="Collapse sidebar">›</button>
+  </div>
+
+  <!-- SIDEBAR (desktop) -->
+  <div id="sidebar">
+
+    <!-- Score Gauge Panel -->
+    <div id="score-panel">
+      <div class="score-panel-title">📊 Live Score Gauges</div>
+      <div class="score-gauge-row">
+        <div class="gauge-item">
+          <div class="gauge-label-row">
+            <span class="gauge-name">K_t — Vision Kinematic Score</span>
+            <span class="gauge-val" id="gauge-kt-val">0.00</span>
+          </div>
+          <div class="gauge-bg">
+            <div class="gauge-fill kt" id="gauge-kt-bar" style="width:0%"></div>
+          </div>
+        </div>
+        <div class="gauge-item">
+          <div class="gauge-label-row">
+            <span class="gauge-name">S_t — Audio Distress Score</span>
+            <span class="gauge-val" id="gauge-st-val">0.00</span>
+          </div>
+          <div class="gauge-bg">
+            <div class="gauge-fill st" id="gauge-st-bar" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+      <div class="gate-status-row">
+        <span class="gate-status-label">Gate Status</span>
+        <span class="gate-status-badge normal" id="gate-status-badge">NORMAL</span>
+      </div>
+    </div>
+
+    <!-- Camera Cards -->
+    <div id="camera-cards">
+      <div class="cam-cards-title">📷 Camera Nodes</div>
+      <div class="cam-cards-grid">
+        <div class="cam-card" id="cam-card-gate-1">
+          <div class="cam-card-top">
+            <div class="cam-status-dot idle" id="cam-dot-gate-1"></div>
+            <span class="cam-card-id">gate-1</span>
+          </div>
+          <div class="cam-card-zone">Main Gate</div>
+          <div class="cam-card-gps">28.4744, 77.5040</div>
+        </div>
+        <div class="cam-card" id="cam-card-gate-2">
+          <div class="cam-card-top">
+            <div class="cam-status-dot idle" id="cam-dot-gate-2"></div>
+            <span class="cam-card-id">gate-2</span>
+          </div>
+          <div class="cam-card-zone">North Entrance</div>
+          <div class="cam-card-gps">28.4755, 77.5050</div>
+        </div>
+        <div class="cam-card" id="cam-card-gate-3">
+          <div class="cam-card-top">
+            <div class="cam-status-dot idle" id="cam-dot-gate-3"></div>
+            <span class="cam-card-id">gate-3</span>
+          </div>
+          <div class="cam-card-zone">South Exit</div>
+          <div class="cam-card-gps">28.4733, 77.5030</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feed header -->
+    <div class="feed-header">
+      <span class="feed-title">🚨 Alert Feed</span>
+      <span id="feed-count">0</span>
+      <button class="feed-clear-btn" onclick="clearFeed()">Clear</button>
+    </div>
+    <!-- Feed list -->
+    <div id="alert-feed">
+      <div class="no-events">🛰 System monitoring…<br>No alerts yet.</div>
+    </div>
+    <!-- Detail panel -->
+    <div id="detail-panel" class="hidden">
+      <div class="detail-inner">
+        <div class="detail-header">
+          <div class="detail-title" id="detail-title">Alert Detail</div>
+          <button class="detail-close" onclick="closeDetail()">✕</button>
+        </div>
+        <div class="score-grid">
+          <div class="score-box">
+            <div class="s-label">K_t (Kinematic)</div>
+            <div class="s-val" id="det-kt">—</div>
+          </div>
+          <div class="score-box">
+            <div class="s-label">S_t (Audio)</div>
+            <div class="s-val" id="det-st">—</div>
+          </div>
+          <div class="score-box">
+            <div class="s-label">Time Gap (dt_s)</div>
+            <div class="s-val" id="det-dt">—</div>
+          </div>
+          <div class="score-box">
+            <div class="s-label">Latency</div>
+            <div class="s-val" id="det-lat">—</div>
+          </div>
+        </div>
+        <div class="score-bar-row">
+          <div class="sb-label"><span>K_t</span><span id="det-kt-pct">—</span></div>
+          <div class="score-bar-bg"><div class="score-bar-fill bar-k" id="det-kt-bar" style="width:0%"></div></div>
+        </div>
+        <div class="score-bar-row">
+          <div class="sb-label"><span>S_t</span><span id="det-st-pct">—</span></div>
+          <div class="score-bar-bg"><div class="score-bar-fill bar-s" id="det-st-bar" style="width:0%"></div></div>
+        </div>
+        <div class="detail-meta">
+          <div>Zone: <span id="det-zone">—</span></div>
+          <div>Timestamp: <span id="det-ts">—</span></div>
+        </div>
+        <div class="action-row">
+          <button class="btn btn-ack"    onclick="sendFeedback(null,'ack')">✓ Acknowledge</button>
+          <button class="btn btn-true"   onclick="sendFeedback(null,'true_alarm')">✅ True Alarm</button>
+          <button class="btn btn-false"  onclick="sendFeedback(null,'false_alarm')">❌ False Alarm</button>
+          <button class="btn btn-export" onclick="exportEvent()">⬇ Export</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Demo Control Panel -->
+    <div id="demo-panel">
+      <div class="demo-panel-title">🧪 Demo Controls</div>
+      <div class="demo-btn-row">
+        <button class="demo-btn alert" onclick="triggerSimulate('S1')">🚨 Simulate ALERT</button>
+        <button class="demo-btn advisory" onclick="triggerSimulate('S2')">⚠ Simulate ADVISORY</button>
+        <button class="demo-btn sequence" onclick="runDemoSequence()">▶ Run Demo Sequence</button>
+        <button class="demo-btn clear" onclick="clearAll()">🔄 Clear All</button>
+      </div>
+      <div id="demo-seq-status"></div>
+    </div>
+
+    <!-- Privacy Panel -->
+    <div id="privacy-panel">
+      <button class="privacy-toggle" id="privacy-toggle-btn" onclick="togglePrivacyPanel()">
+        🔒 Privacy Status
+        <span class="ptgl-arrow">▼</span>
+      </button>
+      <div class="privacy-body" id="privacy-body">
+        <div class="privacy-item">No video written to disk</div>
+        <div class="privacy-item">RAM-only ring buffer (5s)</div>
+        <div class="privacy-item">AES-256-GCM on dispatch</div>
+        <div class="privacy-item">No face recognition</div>
+      </div>
+    </div>
+
+    <!-- About Panel -->
+    <div id="about-panel">
+      <button class="about-toggle" id="about-toggle-btn" onclick="toggleAboutPanel()">
+        ℹ About SurakshaEdge
+        <span class="atgl-arrow">▼</span>
+      </button>
+      <div class="about-body" id="about-body">
+        <ul>
+          <li>Dual-signal fusion: Vision K_t (pose/motion) × Audio S_t (MFCC-CNN) gated within 1.5 s window for high-confidence assault detection.</li>
+          <li>Edge-only inference at 18 FPS on CPU — no cloud dependency, sub-100 ms dispatch latency for real-time campus safety.</li>
+          <li>AES-256-GCM encrypted dispatch, zero-persist RAM ring buffer — privacy-first architecture with no face recognition.</li>
+        </ul>
+        <div class="about-team"><strong>Team SingleThread</strong> — Shambhu Shekhar Sinha (AI Architect) | Vaibhav Kumar Tiwari (QA Engineer)</div>
+        <div class="about-license">License: AGPL-3.0 | GNIOT, Knowledge Park II, Greater Noida</div>
+      </div>
+    </div>
+
+  </div><!-- #sidebar -->
+
+  <!-- MOBILE FEED VIEW -->
+  <div id="mobile-feed-view">
+    <div class="feed-header">
+      <span class="feed-title">🚨 Alert Feed</span>
+      <span id="mobile-feed-count" style="background:var(--red);color:#fff;font-size:.65rem;font-weight:700;padding:1px 7px;border-radius:999px;display:none;">0</span>
+      <button class="feed-clear-btn" onclick="clearFeed()">Clear</button>
+    </div>
+    <div id="mobile-alert-feed">
+      <div class="no-events">🛰 System monitoring…<br>No alerts yet.</div>
+    </div>
+  </div>
+
+</div><!-- #main -->
+
+<!-- ===== HUD FOOTER ===== -->
+<footer id="hud">
+  <div class="hud-item">
+    Alerts <span class="hud-badge red" id="hud-alerts">0</span>
+  </div>
+  <div class="hud-item">
+    Advisory <span class="hud-badge amber" id="hud-adv">0</span>
+  </div>
+  <div class="hud-sep"></div>
+  <div class="hud-item">WS: <span class="hud-val" id="hud-ws">—</span></div>
+  <div class="hud-item">Up: <span class="hud-val" id="hud-uptime">00:00</span></div>
+  <div class="hud-item">Last: <span class="hud-val" id="hud-last">—</span></div>
+  <div class="hud-item">Lat: <span class="hud-val" id="hud-lat">—</span></div>
+  <div class="hud-spacer"></div>
+  <div class="hud-item" style="font-size:.62rem;color:#334155;">REG-008-OP-024</div>
+</footer>
+
+<!-- ===== MOBILE NAV ===== -->
+<div id="mobile-nav">
+  <div class="mobile-nav-inner">
+    <button class="mobile-nav-btn active" id="nav-map" onclick="setTab('map')">
+      <span class="nav-icon">🗺</span>Map
+    </button>
+    <button class="mobile-nav-btn" id="nav-feed" onclick="setTab('feed')">
+      <span class="nav-icon">📋</span>Feed
+    </button>
+    <button class="mobile-nav-btn" id="nav-settings" onclick="openSettings()">
+      <span class="nav-icon">⚙</span>Settings
+    </button>
+  </div>
+</div>
+
+<!-- ===== FAB ===== -->
+<button id="fab-sim" onclick="triggerSimulate('S1')" title="Simulate ALERT">🚨</button>
+
+<!-- ===== SETTINGS PANEL ===== -->
+<div id="settings-panel">
+  <div class="settings-head">
+    <h2>⚙ Settings</h2>
+    <button class="settings-close" onclick="closeSettings()">✕</button>
+  </div>
+  <div class="settings-body">
+
+    <div class="settings-section">
+      <h3>Alert Thresholds (read-only)</h3>
+      <div class="settings-info">
+        <div><span class="si-label">K_t threshold: </span><span class="si-val">0.62</span></div>
+        <div><span class="si-label">S_t threshold: </span><span class="si-val">0.70</span></div>
+        <div><span class="si-label">Gate window: </span><span class="si-val">1.5 s</span></div>
+        <div><span class="si-label">K_t hold: </span><span class="si-val">0.4 s</span></div>
+        <div><span class="si-label">S_t hold: </span><span class="si-val">0.5 s</span></div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>Notification Sound</h3>
+      <div class="settings-row">
+        <span class="settings-label">Volume</span>
+        <input type="range" id="vol-slider" min="0" max="100" value="70" oninput="updateVolume(this.value)" style="width:120px" />
+        <span id="vol-val" style="font-size:.78rem;color:var(--subtle);min-width:30px">70%</span>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>Auto-clear Alerts</h3>
+      <div class="settings-row">
+        <span class="settings-label">Clear after</span>
+        <select id="autoclear-sel" onchange="saveSetting('autoclear',this.value)">
+          <option value="0">Never</option>
+          <option value="15" selected>15 s</option>
+          <option value="30">30 s</option>
+          <option value="60">60 s</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>Map Tile</h3>
+      <div class="settings-row">
+        <span class="settings-label">Tile layer</span>
+        <select id="tile-sel" onchange="setTileFromSelect(this.value)">
+          <option value="dark" selected>Dark</option>
+          <option value="satellite">Satellite</option>
+          <option value="street">Street</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>Effects</h3>
+      <div class="settings-row">
+        <span class="settings-label">Strobe on ALERT</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="strobe-toggle" checked onchange="saveSetting('strobe',this.checked)">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== HELP MODAL ===== -->
+<div id="help-overlay" onclick="handleHelpOverlayClick(event)">
+  <div class="help-modal">
+    <div class="help-head">
+      <h2>🛡 SurakshaEdge — Operator Guide</h2>
+      <button class="help-close" onclick="closeHelp()">✕</button>
+    </div>
+    <div class="help-body">
+
+      <div class="help-section">
+        <h3>📢 Understanding Alerts</h3>
+        <ul>
+          <li><strong style="color:var(--red)">ALERT</strong> = kinematic struggle (K_t≥0.62 for 0.4 s) AND audio scream (S_t≥0.70 for 0.5 s) detected simultaneously within a 1.5 s gate window. Highest confidence.</li>
+          <li><strong style="color:var(--amber)">ADVISORY</strong> = only one signal detected (kinematic OR audio). Investigate but not confirmed assault.</li>
+        </ul>
+      </div>
+
+      <div class="help-section">
+        <h3>📊 Score Meanings</h3>
+        <ul>
+          <li><code>K_t</code> (0–1) — Kinematic score from pose/motion model. ≥0.62 triggers kinematic flag.</li>
+          <li><code>S_t</code> (0–1) — Audio score from CNN or energy fallback. ≥0.70 triggers audio flag.</li>
+          <li><code>dt_s</code> — Time gap between K and S detections (should be &lt;1.5 s for ALERT).</li>
+          <li>ALERT fires only when BOTH flags are active within the gate window.</li>
+        </ul>
+      </div>
+
+      <div class="help-section">
+        <h3>🗺 Map Zones</h3>
+        <ul>
+          <li>Blue semi-transparent polygon = monitored campus perimeter (GNIOT, Greater Noida).</li>
+          <li>Camera pins: <span style="color:var(--muted)">grey</span> = idle, <span style="color:var(--amber)">orange</span> = advisory, <span style="color:var(--red)">red</span> = active alert (pulses).</li>
+          <li>Alert pins auto-remove after 15 s; camera icon resets to idle.</li>
+        </ul>
+      </div>
+
+      <div class="help-section">
+        <h3>⚠ Audio Mode Warning</h3>
+        <p>If the <strong style="color:#fed7aa">ENERGY FALLBACK</strong> badge appears, the MFCC-CNN model is not loaded. In fallback mode, S_t detects <em>any</em> loud sound — not specifically screams. False positives increase significantly. Load <code>models/audio_cnn.onnx</code> for true scream detection.</p>
+      </div>
+
+      <div class="help-section">
+        <h3>🔒 Privacy</h3>
+        <ul>
+          <li>No video stored persistently. Only a 5-second RAM ring buffer is maintained.</li>
+          <li>An AES-256-GCM encrypted short clip is saved only on confirmed ALERT events.</li>
+          <li>All data stays on-device (edge processing). No cloud upload. No face recognition.</li>
+        </ul>
+      </div>
+
+      <div class="help-section">
+        <h3>⌨ Keyboard Shortcuts</h3>
+        <div class="kbd-grid">
+          <div class="kbd">M</div><div>Mute / unmute siren</div>
+          <div class="kbd">H</div><div>Open this help screen</div>
+          <div class="kbd">C</div><div>Clear alert feed</div>
+          <div class="kbd">S</div><div>Simulate ALERT (demo)</div>
+          <div class="kbd">Esc</div><div>Close modal / panel</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ===== TOAST CONTAINER ===== -->
+<div id="toast-container"></div>
+
+<!-- ===== SCRIPTS ===== -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+'use strict';
+
+/* ================================================================
+   CONSTANTS & STATE
+   ================================================================ */
+const TOKEN       = 'demo-token';
+const CENTER_LAT  = 28.4744;
+const CENTER_LON  = 77.5040;
+const MAX_CARDS   = 50;
+
+let alertCount    = 0;
+let advCount      = 0;
+let muted         = false;
+let sirenVolume   = 0.70;
+let sidebarOpen   = true;
+let currentTileKey = 'dark';
+let detailEvent   = null;   // currently shown event in detail panel
+let feedCards     = [];     // [{id, el, evt}]
+let mobileCards   = [];
+let pageStart     = Date.now();
+let lastEventTime = null;
+let audioCtx      = null;
+let wsEventsCount = 0;
+let demoSeqRunning = false;
+
+// Camera reset timers keyed by cam_id
+const camResetTimers = {};
+
+/* ================================================================
+   SETTINGS PERSISTENCE
+   ================================================================ */
+function loadSettings() {
+  try {
+    const s = JSON.parse(localStorage.getItem('se_settings') || '{}');
+    if (s.muted   !== undefined) muted       = s.muted;
+    if (s.volume  !== undefined) sirenVolume = s.volume / 100;
+    if (s.strobe  !== undefined) document.getElementById('strobe-toggle').checked = s.strobe;
+    if (s.autoclear !== undefined) document.getElementById('autoclear-sel').value = s.autoclear;
+    if (s.tile    !== undefined) { currentTileKey = s.tile; document.getElementById('tile-sel').value = s.tile; }
+    if (s.sidebar !== undefined) sidebarOpen = s.sidebar;
+    const volSlider = document.getElementById('vol-slider');
+    volSlider.value = Math.round(sirenVolume * 100);
+    document.getElementById('vol-val').textContent = volSlider.value + '%';
+    updateMuteBtn();
+  } catch(e) {}
+}
+
+function saveSetting(key, val) {
+  try {
+    const s = JSON.parse(localStorage.getItem('se_settings') || '{}');
+    s[key] = val;
+    localStorage.setItem('se_settings', JSON.stringify(s));
+  } catch(e) {}
+}
+
+function updateVolume(val) {
+  sirenVolume = val / 100;
+  document.getElementById('vol-val').textContent = val + '%';
+  saveSetting('volume', parseInt(val, 10));
+}
+
+/* ================================================================
+   AUDIO
+   ================================================================ */
+function _ensureAudioCtx() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+  return audioCtx;
+}
+
+function playSiren() {
+  if (muted || !audioCtx) return;
+  try {
+    const ctx = _ensureAudioCtx();
+    function addSweep(startT) {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(880, startT);
+      osc.frequency.linearRampToValueAtTime(440, startT + 0.5);
+      osc.frequency.linearRampToValueAtTime(880, startT + 1.0);
+      gain.gain.setValueAtTime(sirenVolume * 0.35, startT);
+      gain.gain.linearRampToValueAtTime(0, startT + 0.95);
+      osc.start(startT);
+      osc.stop(startT + 1.0);
+    }
+    const t = ctx.currentTime;
+    addSweep(t);
+    addSweep(t + 1.0);
+    addSweep(t + 2.0);
+  } catch(e) { console.warn('Siren error:', e); }
+}
+
+function muteToggle() {
+  _ensureAudioCtx();
+  muted = !muted;
+  saveSetting('muted', muted);
+  updateMuteBtn();
+}
+
+function updateMuteBtn() {
+  const btn = document.getElementById('mute-btn');
+  if (muted) {
+    btn.textContent = '🔇 Muted';
+    btn.classList.add('muted');
+  } else {
+    btn.textContent = '🔊 Sound';
+    btn.classList.remove('muted');
+  }
+}
+
+/* ================================================================
+   STROBE
+   ================================================================ */
+function triggerStrobe() {
+  if (!document.getElementById('strobe-toggle').checked) return;
+  const s = document.getElementById('strobe');
+  s.classList.remove('active');
+  void s.offsetWidth;
+  s.classList.add('active');
+  setTimeout(() => s.classList.remove('active'), 2500);
+}
+
+/* ================================================================
+   SCORE GAUGES
+   ================================================================ */
+function updateScoreGauges(kt, st, tier) {
+  const ktPct = Math.min(100, Math.round(kt * 100));
+  const stPct = Math.min(100, Math.round(st * 100));
+
+  document.getElementById('gauge-kt-val').textContent = kt.toFixed(2);
+  document.getElementById('gauge-st-val').textContent = st.toFixed(2);
+
+  const ktBar = document.getElementById('gauge-kt-bar');
+  const stBar = document.getElementById('gauge-st-bar');
+
+  ktBar.style.width = ktPct + '%';
+  stBar.style.width = stPct + '%';
+
+  // Color transitions for K_t: blue→orange→red
+  if (ktPct < 50)       ktBar.style.background = '#3b82f6';
+  else if (ktPct < 70)  ktBar.style.background = '#f97316';
+  else                   ktBar.style.background = '#ef4444';
+
+  // Color transitions for S_t: green→yellow→red
+  if (stPct < 50)       stBar.style.background = '#22c55e';
+  else if (stPct < 75)  stBar.style.background = '#eab308';
+  else                   stBar.style.background = '#ef4444';
+
+  // Gate status
+  const badge = document.getElementById('gate-status-badge');
+  badge.className = 'gate-status-badge';
+  if (tier === 'ALERT') {
+    badge.classList.add('alert');
+    badge.textContent = '⚡ ALERT';
+  } else if (tier === 'ADVISORY') {
+    badge.classList.add('advisory');
+    badge.textContent = 'ADVISORY';
+  } else {
+    badge.classList.add('normal');
+    badge.textContent = 'NORMAL';
+  }
+
+  // Decay back to normal after 8s
+  clearTimeout(updateScoreGauges._timer);
+  updateScoreGauges._timer = setTimeout(() => {
+    document.getElementById('gauge-kt-bar').style.width = '0%';
+    document.getElementById('gauge-st-bar').style.width = '0%';
+    document.getElementById('gauge-kt-val').textContent = '0.00';
+    document.getElementById('gauge-st-val').textContent = '0.00';
+    const b = document.getElementById('gate-status-badge');
+    b.className = 'gate-status-badge normal';
+    b.textContent = 'NORMAL';
+  }, 8000);
+}
+
+/* ================================================================
+   CAMERA CARDS
+   ================================================================ */
+const CAM_INFO = {
+  'gate-1': { zone: 'Main Gate',      gps: '28.4744, 77.5040' },
+  'gate-2': { zone: 'North Entrance', gps: '28.4755, 77.5050' },
+  'gate-3': { zone: 'South Exit',     gps: '28.4733, 77.5030' },
+};
+
+function updateCameraCard(camId, tier) {
+  const card = document.getElementById('cam-card-' + camId);
+  const dot  = document.getElementById('cam-dot-' + camId);
+  if (!card || !dot) return;
+
+  // Reset classes
+  card.className = 'cam-card';
+  dot.className  = 'cam-status-dot';
+
+  if (tier === 'ALERT') {
+    card.classList.add('cam-alert');
+    dot.classList.add('alert');
+  } else if (tier === 'ADVISORY') {
+    card.classList.add('cam-advisory');
+    dot.classList.add('advisory');
+  } else {
+    dot.classList.add('idle');
+  }
+
+  // Reset to idle after 15s
+  clearTimeout(camResetTimers[camId]);
+  if (tier !== 'NONE') {
+    camResetTimers[camId] = setTimeout(() => updateCameraCard(camId, 'NONE'), 15000);
+  }
+}
+
+/* ================================================================
+   MAP SETUP
+   ================================================================ */
+const map = L.map('map', { zoomControl: true }).setView([CENTER_LAT, CENTER_LON], 17);
+
+const TILES = {
+  dark: L.tileLayer(
+    'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    { attribution: '© OpenStreetMap © CartoDB', maxZoom: 20 }
+  ),
+  satellite: L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    { attribution: '© Esri World Imagery', maxZoom: 20 }
+  ),
+  street: L.tileLayer(
+    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    { attribution: '© OpenStreetMap contributors', maxZoom: 19 }
+  ),
+};
+TILES.dark.addTo(map);
+
+// Zone polygons are loaded dynamically from /zones endpoint (see loadZones())
+
+// Tile toggle
+function toggleTile() {
+  const order = ['dark', 'satellite', 'street'];
+  const idx = order.indexOf(currentTileKey);
+  const next = order[(idx + 1) % order.length];
+  setTile(next);
+  document.getElementById('tile-sel').value = next;
+}
+
+function setTileFromSelect(val) {
+  setTile(val);
+  saveSetting('tile', val);
+}
+
+function setTile(key) {
+  if (TILES[currentTileKey]) map.removeLayer(TILES[currentTileKey]);
+  currentTileKey = key;
+  TILES[key].addTo(map);
+  document.getElementById('tile-toggle-btn').textContent =
+    { dark: '🌙 Dark Tile', satellite: '🛰 Satellite', street: '🗺 Street' }[key];
+  saveSetting('tile', key);
+}
+
+// Camera & alert markers
+const cameraMarkers = {};  // cam_id -> { marker, gps, zone }
+const alertMarkers  = {};  // cam_id -> { marker, timer }
+
+function getCamIcon(tier) {
+  const colors = { ALERT: '#ef4444', ADVISORY: '#f97316', NONE: '#64748b' };
+  const c = colors[tier] || colors.NONE;
+  const pulse = tier === 'ALERT'
+    ? 'animation:camAlert 0.8s ease-in-out infinite;'
+    : '';
+  return L.divIcon({
+    html: `<div style="
+      width:16px;height:16px;border-radius:50%;
+      background:${c};border:2.5px solid rgba(255,255,255,0.85);
+      box-shadow:0 0 8px ${c};
+      ${pulse}
+    "></div>`,
+    className: '',
+    iconSize: [16, 16],
+    iconAnchor: [8, 8],
+  });
+}
+
+function clearAlertMarkers() {
+  Object.keys(alertMarkers).forEach(k => {
+    const am = alertMarkers[k];
+    clearTimeout(am.timer);
+    map.removeLayer(am.marker);
+    delete alertMarkers[k];
+  });
+  // reset camera icons
+  Object.values(cameraMarkers).forEach(cm => {
+    clearTimeout(cm._resetTimer);
+    cm.marker.setIcon(getCamIcon('NONE'));
+  });
+  showToast('Alert markers cleared');
+}
+
+function showAllCameras() {
+  const pts = Object.values(cameraMarkers).map(cm => [cm.gps.lat, cm.gps.lon]);
+  if (pts.length === 0) {
+    map.setView([CENTER_LAT, CENTER_LON], 17);
+    return;
+  }
+  map.fitBounds(L.latLngBounds(pts), { padding: [30, 30] });
+}
+
+function showZoneInfo() {
+  showToast(`🔵 GNIOT Campus Zone · Center: ${CENTER_LAT}, ${CENTER_LON} · ~200m radius`);
+}
+
+function placeAlertMarker(evt) {
+  if (!evt.gps) return;
+  const camKey = evt.camera_id;
+  const kt = evt.scores?.K_t?.toFixed(2) ?? '—';
+  const st = evt.scores?.S_t?.toFixed(2) ?? '—';
+  const tierCls = evt.tier === 'ALERT' ? 'popup-tier-alert' : 'popup-tier-advisory';
+  const camInfo2 = CAM_INFO[camKey] || {};
+
+  // remove previous alert marker for this camera
+  if (alertMarkers[camKey]) {
+    clearTimeout(alertMarkers[camKey].timer);
+    map.removeLayer(alertMarkers[camKey].marker);
+  }
+
+  const m = L.marker([evt.gps.lat, evt.gps.lon], { icon: getCamIcon(evt.tier) })
+    .addTo(map)
+    .bindPopup(`
+      <div class="${tierCls}">${evt.tier}</div>
+      <b>${camInfo2.zone || evt.camera_id}</b> <span style="color:#64748b;font-size:.75rem">${evt.camera_id}</span><br>
+      GPS: ${evt.gps.lat.toFixed(4)}, ${evt.gps.lon.toFixed(4)}<br>
+      K_t: ${kt} &nbsp; S_t: ${st}<br>
+      <span style="font-size:.72rem;color:#64748b">${new Date(evt.ts_utc).toLocaleTimeString()}</span>
+    `)
+    .openPopup();
+
+  const timer = setTimeout(() => {
+    if (alertMarkers[camKey]?.marker === m) {
+      map.removeLayer(m);
+      delete alertMarkers[camKey];
+    }
+    if (cameraMarkers[camKey]) {
+      cameraMarkers[camKey].marker.setIcon(getCamIcon('NONE'));
+    }
+  }, 15000);
+
+  alertMarkers[camKey] = { marker: m, timer };
+
+  // update standing camera icon
+  if (cameraMarkers[camKey]) {
+    clearTimeout(cameraMarkers[camKey]._resetTimer);
+    cameraMarkers[camKey].marker.setIcon(getCamIcon(evt.tier));
+    cameraMarkers[camKey]._resetTimer = setTimeout(() => {
+      if (cameraMarkers[camKey])
+        cameraMarkers[camKey].marker.setIcon(getCamIcon('NONE'));
+    }, 15000);
+  }
+
+  map.flyTo([evt.gps.lat, evt.gps.lon], 18, { duration: 0.8 });
+}
+
+/* ================================================================
+   LOAD CAMERAS
+   ================================================================ */
+function loadCameras() {
+  fetch('/cameras')
+    .then(r => r.json())
+    .then(cams => {
+      cams.forEach(cam => {
+        const info = CAM_INFO[cam.id] || {};
+        const popupHtml = `
+          <b>${cam.zone || info.zone || cam.id}</b><br>
+          <span style="color:#64748b;font-size:.75rem">${cam.id}</span><br>
+          GPS: ${cam.gps.lat.toFixed(4)}, ${cam.gps.lon.toFixed(4)}
+        `;
+        const m = L.marker([cam.gps.lat, cam.gps.lon], { icon: getCamIcon('NONE') })
+          .addTo(map)
+          .bindPopup(popupHtml);
+        cameraMarkers[cam.id] = { marker: m, gps: cam.gps, zone: cam.zone || info.zone };
+      });
+      document.getElementById('badge-cams').textContent = `📷 ${cams.length} cam${cams.length !== 1 ? 's' : ''}`;
+      document.getElementById('badge-cams').style.display = 'inline';
+    })
+    .catch(() => {
+      // fallback demo cameras
+      const demos = [
+        { id: 'gate-1', lat: CENTER_LAT, lon: CENTER_LON, zone: 'Main Gate' },
+        { id: 'gate-2', lat: 28.4755,    lon: 77.5050,    zone: 'North Entrance' },
+        { id: 'gate-3', lat: 28.4733,    lon: 77.5030,    zone: 'South Exit' },
+      ];
+      demos.forEach(cam => {
+        const popupHtml = `
+          <b>${cam.zone}</b><br>
+          <span style="color:#64748b;font-size:.75rem">${cam.id}</span><br>
+          GPS: ${cam.lat.toFixed(4)}, ${cam.lon.toFixed(4)}
+        `;
+        const m = L.marker([cam.lat, cam.lon], { icon: getCamIcon('NONE') })
+          .addTo(map)
+          .bindPopup(popupHtml);
+        cameraMarkers[cam.id] = { marker: m, gps: { lat: cam.lat, lon: cam.lon }, zone: cam.zone };
+      });
+      document.getElementById('badge-cams').textContent = '📷 3 cams';
+      document.getElementById('badge-cams').style.display = 'inline';
+    });
+}
+
+/* ================================================================
+   LOAD ZONE POLYGONS
+   ================================================================ */
+function loadZones() {
+  fetch('/zones')
+    .then(r => r.json())
+    .then(data => {
+      data.zones.forEach(z => {
+        const poly = L.polygon(z.polygon, {
+          color: z.color || '#3b82f6',
+          fillColor: z.color || '#3b82f6',
+          fillOpacity: z.opacity != null ? z.opacity : 0.12,
+          weight: 2,
+          dashArray: '6,4',
+        }).addTo(map);
+        poly.bindTooltip(z.name, {
+          permanent: true,
+          direction: 'center',
+          className: 'zone-label',
+          opacity: 0.85,
+        });
+      });
+    })
+    .catch(() => {
+      // Zones endpoint unavailable — draw fallback campus polygon
+      L.polygon([
+        [28.4760, 77.5020], [28.4760, 77.5060],
+        [28.4744, 77.5075], [28.4728, 77.5060],
+        [28.4728, 77.5020], [28.4744, 77.5005],
+      ], { color: '#3b82f6', fillOpacity: 0.12, weight: 2, dashArray: '6,4' })
+        .addTo(map)
+        .bindTooltip('GNIOT Campus — Monitored Zone', {
+          permanent: true, direction: 'center',
+          className: 'zone-label', opacity: 0.85,
+        });
+    });
+}
+
+/* ================================================================
+   ALERT FEED CARDS
+   ================================================================ */
+function makeCard(evt, isMobile) {
+  const kt  = evt.scores?.K_t ?? 0;
+  const st  = evt.scores?.S_t ?? 0;
+  const dt  = evt.scores?.dt_s;
+  const lat = evt.latency_ms
+    ? `${((evt.latency_ms.pipeline || 0) + (evt.latency_ms.dispatch || 0)).toFixed(0)} ms`
+    : '—';
+  const t   = new Date(evt.ts_utc).toLocaleTimeString();
+  const pct = v => Math.min(100, Math.round(v * 100));
+  const camInfo2 = CAM_INFO[evt.camera_id] || {};
+
+  const dualBanner = (evt.tier === 'ALERT')
+    ? `<div class="dual-signal-banner">⚡ DUAL-SIGNAL FUSION TRIGGERED${dt != null && dt >= 0 ? ` · dt=${dt.toFixed(2)}s` : ''}</div>`
+    : '';
+
+  const card = document.createElement('div');
+  card.className = `alert-card ${evt.tier}`;
+  card.dataset.eventId = evt.event_id;
+  card.innerHTML = `
+    <button class="card-dismiss" title="Dismiss">✕</button>
+    <div class="card-top">
+      <span class="tier-badge">${evt.tier}</span>
+      <span class="card-cam">${evt.camera_id}</span>
+      <span class="card-zone">${camInfo2.zone || ''}</span>
+      <span class="card-time">${t}</span>
+    </div>
+    <div class="card-scores">
+      <div class="mini-score">
+        <div class="mini-score-label"><span>K_t</span><span>${kt.toFixed(2)}</span></div>
+        <div class="mini-bar-bg"><div class="mini-bar-fill bar-k" style="width:${pct(kt)}%"></div></div>
+      </div>
+      <div class="mini-score">
+        <div class="mini-score-label"><span>S_t</span><span>${st.toFixed(2)}</span></div>
+        <div class="mini-bar-bg"><div class="mini-bar-fill bar-s" style="width:${pct(st)}%"></div></div>
+      </div>
+    </div>
+    <div class="card-latency">Latency: ${lat}</div>
+    ${dualBanner}
+    <button class="card-ack-btn" data-acked="0">✓ Acknowledge</button>
+  `;
+
+  card.addEventListener('click', e => {
+    if (e.target.classList.contains('card-dismiss')) return;
+    if (e.target.classList.contains('card-ack-btn')) return;
+    showDetail(evt);
+    if (evt.gps) {
+      map.flyTo([evt.gps.lat, evt.gps.lon], 18, { duration: 0.8 });
+    }
+    if (isMobile) setTab('map');
+  });
+
+  card.querySelector('.card-dismiss').addEventListener('click', e => {
+    e.stopPropagation();
+    dismissCard(evt.event_id);
+  });
+
+  card.querySelector('.card-ack-btn').addEventListener('click', e => {
+    e.stopPropagation();
+    const btn = e.target;
+    if (btn.dataset.acked === '0') {
+      btn.textContent = '✓ Acknowledged';
+      btn.classList.add('acked');
+      btn.dataset.acked = '1';
+    }
+  });
+
+  return card;
+}
+
+function addEventCard(evt, prepend = true) {
+  // Deduplicate
+  if (feedCards.find(c => c.id === evt.event_id)) return;
+
+  const feed       = document.getElementById('alert-feed');
+  const mobileFeed = document.getElementById('mobile-alert-feed');
+
+  // Remove placeholder
+  feed.querySelector('.no-events')?.remove();
+  mobileFeed.querySelector('.no-events')?.remove();
+
+  const card       = makeCard(evt, false);
+  const mobileCard = makeCard(evt, true);
+
+  if (prepend) {
+    feed.prepend(card);
+    mobileFeed.prepend(mobileCard);
+  } else {
+    feed.appendChild(card);
+    mobileFeed.appendChild(mobileCard);
+  }
+
+  feedCards.push({ id: evt.event_id, el: card, mel: mobileCard, evt });
+
+  // Trim to max 50
+  while (feedCards.length > MAX_CARDS) {
+    const oldest = feedCards.shift();
+    oldest.el.remove();
+    oldest.mel.remove();
+  }
+
+  updateFeedCount();
+
+  // Auto-clear if configured
+  const autoClearSec = parseInt(document.getElementById('autoclear-sel').value, 10);
+  if (autoClearSec > 0) {
+    setTimeout(() => dismissCard(evt.event_id), autoClearSec * 1000);
+  }
+
+  // Map marker
+  placeAlertMarker(evt);
+
+  // Update score gauges
+  const kt = evt.scores?.K_t ?? 0;
+  const st = evt.scores?.S_t ?? 0;
+  updateScoreGauges(kt, st, evt.tier);
+
+  // Update camera cards
+  updateCameraCard(evt.camera_id, evt.tier);
+
+  // Counters + effects
+  if (evt.tier === 'ALERT') {
+    alertCount++;
+    document.getElementById('hud-alerts').textContent = alertCount;
+    playSiren();
+    triggerStrobe();
+  } else if (evt.tier === 'ADVISORY') {
+    advCount++;
+    document.getElementById('hud-adv').textContent = advCount;
+  }
+
+  // HUD last event
+  lastEventTime = new Date(evt.ts_utc);
+  document.getElementById('hud-last').textContent = lastEventTime.toLocaleTimeString();
+  if (evt.latency_ms) {
+    const totalMs = (evt.latency_ms.pipeline || 0) + (evt.latency_ms.dispatch || 0);
+    document.getElementById('hud-lat').textContent = `${totalMs.toFixed(0)} ms`;
+    // Update stats bar latency
+    document.getElementById('stat-lat-val').textContent = `${totalMs.toFixed(0)}ms`;
+  }
+}
+
+function dismissCard(eventId) {
+  const idx = feedCards.findIndex(c => c.id === eventId);
+  if (idx === -1) return;
+  const item = feedCards[idx];
+  item.el.remove();
+  item.mel.remove();
+  feedCards.splice(idx, 1);
+  updateFeedCount();
+
+  if (feedCards.length === 0) {
+    document.getElementById('alert-feed').innerHTML       = '<div class="no-events">🛰 System monitoring…<br>No alerts yet.</div>';
+    document.getElementById('mobile-alert-feed').innerHTML = '<div class="no-events">🛰 System monitoring…<br>No alerts yet.</div>';
+  }
+
+  if (detailEvent?.event_id === eventId) {
+    closeDetail();
+  }
+}
+
+function updateFeedCount() {
+  const n = feedCards.length;
+  const fc = document.getElementById('feed-count');
+  const mfc = document.getElementById('mobile-feed-count');
+  fc.textContent  = n;
+  mfc.textContent = n;
+  fc.style.display  = n > 0 ? 'inline' : 'none';
+  mfc.style.display = n > 0 ? 'inline' : 'none';
+}
+
+function clearFeed() {
+  feedCards.forEach(c => { c.el.remove(); c.mel.remove(); });
+  feedCards = [];
+  document.getElementById('alert-feed').innerHTML        = '<div class="no-events">Feed cleared.</div>';
+  document.getElementById('mobile-alert-feed').innerHTML = '<div class="no-events">Feed cleared.</div>';
+  updateFeedCount();
+  closeDetail();
+}
+
+function clearAll() {
+  clearFeed();
+  clearAlertMarkers();
+  // Reset all camera cards to idle
+  ['gate-1','gate-2','gate-3'].forEach(id => updateCameraCard(id, 'NONE'));
+  // Reset gauges
+  updateScoreGauges(0, 0, 'NONE');
+  showToast('All cleared');
+}
+
+/* ================================================================
+   DETAIL PANEL
+   ================================================================ */
+function showDetail(evt) {
+  detailEvent = evt;
+  const kt  = evt.scores?.K_t ?? 0;
+  const st  = evt.scores?.S_t ?? 0;
+  const lat = evt.latency_ms
+    ? `${((evt.latency_ms.pipeline || 0) + (evt.latency_ms.dispatch || 0)).toFixed(0)} ms`
+    : '—';
+
+  document.getElementById('detail-title').textContent = `${evt.tier} — ${evt.camera_id}`;
+  document.getElementById('det-kt').textContent = kt.toFixed(3);
+  document.getElementById('det-st').textContent = st.toFixed(3);
+  document.getElementById('det-dt').textContent =
+    (evt.scores?.dt_s >= 0) ? `${evt.scores.dt_s.toFixed(2)} s` : 'N/A';
+  document.getElementById('det-lat').textContent = lat;
+
+  // bars
+  const ktPct = Math.min(100, Math.round(kt * 100));
+  const stPct = Math.min(100, Math.round(st * 100));
+  document.getElementById('det-kt-bar').style.width = ktPct + '%';
+  document.getElementById('det-st-bar').style.width = stPct + '%';
+  document.getElementById('det-kt-pct').textContent = ktPct + '%';
+  document.getElementById('det-st-pct').textContent = stPct + '%';
+
+  // zone & timestamp
+  const camInfo = cameraMarkers[evt.camera_id];
+  const camInfo2 = CAM_INFO[evt.camera_id] || {};
+  document.getElementById('det-zone').textContent = camInfo?.zone ?? camInfo2.zone ?? evt.zone ?? '—';
+  document.getElementById('det-ts').textContent   = new Date(evt.ts_utc).toLocaleString();
+
+  document.getElementById('detail-panel').classList.remove('hidden');
+}
+
+function closeDetail() {
+  detailEvent = null;
+  document.getElementById('detail-panel').classList.add('hidden');
+}
+
+function sendFeedback(eventId, verdict) {
+  const id = eventId || detailEvent?.event_id;
+  if (verdict === 'ack') { closeDetail(); return; }
+  if (!id) { closeDetail(); return; }
+  fetch(`/events/${id}/feedback`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${TOKEN}`,
+    },
+    body: JSON.stringify({ verdict, note: null }),
+  })
+    .then(() => { showToast(`Feedback sent: ${verdict}`); closeDetail(); })
+    .catch(e => { console.warn('Feedback error:', e); closeDetail(); });
+}
+
+function exportEvent() {
+  if (!detailEvent) return;
+  const blob = new Blob([JSON.stringify(detailEvent, null, 2)], { type: 'application/json' });
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = `se_event_${detailEvent.event_id || Date.now()}.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+}
+
+/* ================================================================
+   SIMULATE
+   ================================================================ */
+function triggerSimulate(scenario, camOverride) {
+  _ensureAudioCtx();
+  const cam = camOverride || Object.keys(cameraMarkers)[0] || 'gate-1';
+  fetch('/simulate', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${TOKEN}`,
+    },
+    body: JSON.stringify({ scenario, camera_id: cam }),
+  }).catch(() => {
+    // Fallback: generate a local synthetic event for demo
+    const camInfo = cameraMarkers[cam];
+    const isFull  = scenario === 'S1';
+    const camKeys = Object.keys(cameraMarkers);
+    const randomCam = camKeys[Math.floor(Math.random() * camKeys.length)] || cam;
+    const rCamInfo  = cameraMarkers[randomCam];
+    const synth   = {
+      event_id:  `sim_${Date.now()}`,
+      type:      'event',
+      tier:      isFull ? 'ALERT' : 'ADVISORY',
+      camera_id: randomCam,
+      ts_utc:    new Date().toISOString(),
+      scores:    {
+        K_t:  isFull ? 0.78 : 0.65,
+        S_t:  isFull ? 0.85 : 0.42,
+        dt_s: isFull ? 0.4  : -1,
+      },
+      gps:       rCamInfo?.gps || { lat: CENTER_LAT, lon: CENTER_LON },
+      latency_ms:{ pipeline: 42, dispatch: 8 },
+    };
+    addEventCard(synth);
+  });
+}
+
+/* ================================================================
+   DEMO SEQUENCE
+   ================================================================ */
+async function runDemoSequence() {
+  if (demoSeqRunning) { showToast('Demo already running'); return; }
+  demoSeqRunning = true;
+  const statusEl = document.getElementById('demo-seq-status');
+  const cams = ['gate-2', 'gate-1', 'gate-3'];
+  const steps = [
+    { scenario: 'S2', cam: cams[0], label: '1/3 → ADVISORY on gate-2' },
+    { scenario: 'S2', cam: cams[1], label: '2/3 → ADVISORY on gate-1' },
+    { scenario: 'S1', cam: cams[2], label: '3/3 → ALERT on gate-3' },
+  ];
+  for (const step of steps) {
+    statusEl.textContent = step.label;
+    statusEl.style.color = step.scenario === 'S1' ? 'var(--red)' : 'var(--amber)';
+    triggerSimulate(step.scenario, step.cam);
+    await new Promise(r => setTimeout(r, 1500));
+  }
+  statusEl.textContent = '✓ Sequence complete — cooldown…';
+  statusEl.style.color = 'var(--green)';
+  await new Promise(r => setTimeout(r, 2000));
+  statusEl.textContent = '';
+  demoSeqRunning = false;
+}
+
+/* ================================================================
+   WEBSOCKET
+   ================================================================ */
+let ws, wsDelay = 1000;
+
+function connectWS() {
+  const url = `ws://${location.host}/ws/alerts`;
+  try { ws = new WebSocket(url); } catch(e) { scheduleReconnect(); return; }
+
+  ws.onopen = () => {
+    setWSStatus(true);
+    wsDelay = 1000;
+  };
+  ws.onmessage = e => {
+    try {
+      const msg = JSON.parse(e.data);
+      if ((msg.type === 'event' || msg.tier) && msg.tier && msg.tier !== 'NONE') {
+        wsEventsCount++;
+        document.getElementById('ws-events-count').textContent = wsEventsCount;
+        document.getElementById('ws-events-label').style.display = 'inline';
+        addEventCard(msg);
+      }
+    } catch {}
+  };
+  ws.onclose = () => {
+    setWSStatus(false);
+    scheduleReconnect();
+  };
+  ws.onerror = () => ws.close();
+}
+
+function scheduleReconnect() {
+  setTimeout(connectWS, wsDelay);
+  wsDelay = Math.min(wsDelay * 2, 30000);
+}
+
+function setWSStatus(ok) {
+  const dot   = document.getElementById('status-dot');
+  const label = document.getElementById('conn-label');
+  const hud   = document.getElementById('hud-ws');
+  if (ok) {
+    dot.classList.add('connected');
+    label.textContent = 'WS Connected';
+    hud.textContent   = 'OK';
+  } else {
+    dot.classList.remove('connected');
+    label.textContent = 'Reconnecting…';
+    hud.textContent   = 'Lost';
+  }
+}
+
+/* ================================================================
+   LOAD RECENT EVENTS & HEALTH
+   ================================================================ */
+fetch('/events')
+  .then(r => r.json())
+  .then(evts => {
+    evts.slice(0, 20)
+        .filter(e => e.tier && e.tier !== 'NONE')
+        .reverse()
+        .forEach(e => addEventCard(e, true));
+  })
+  .catch(() => {});
+
+fetch('/health')
+  .then(r => r.json())
+  .then(h => {
+    if (h.audio_mode === 'energy_fallback') {
+      document.getElementById('badge-fallback').style.display = 'inline';
+      document.getElementById('stat-audio-badge').textContent = '⚠ ENERGY FALLBACK';
+      document.getElementById('stat-audio-badge').className = 'stat-badge amber';
+    } else if (h.audio_mode === 'mfcc_cnn') {
+      document.getElementById('badge-mfcc').style.display = 'inline';
+      document.getElementById('stat-audio-badge').textContent = 'MFCC-CNN ACTIVE';
+      document.getElementById('stat-audio-badge').className = 'stat-badge green';
+    }
+    // Update FPS from health if available
+    if (h.fps) {
+      document.getElementById('stat-fps-val').textContent = parseFloat(h.fps).toFixed(1);
+    }
+  })
+  .catch(() => {});
+
+/* ================================================================
+   SIDEBAR COLLAPSE
+   ================================================================ */
+function toggleSidebar() {
+  sidebarOpen = !sidebarOpen;
+  const sb    = document.getElementById('sidebar');
+  const btn   = document.getElementById('sidebar-toggle');
+  if (sidebarOpen) {
+    sb.classList.remove('collapsed');
+    btn.textContent = '›';
+  } else {
+    sb.classList.add('collapsed');
+    btn.textContent = '‹';
+  }
+  saveSetting('sidebar', sidebarOpen);
+  setTimeout(() => map.invalidateSize(), 270);
+}
+
+/* ================================================================
+   SETTINGS PANEL
+   ================================================================ */
+function openSettings() {
+  _ensureAudioCtx();
+  document.getElementById('settings-panel').classList.add('open');
+}
+function closeSettings() {
+  document.getElementById('settings-panel').classList.remove('open');
+}
+
+/* ================================================================
+   HELP MODAL
+   ================================================================ */
+function openHelp() {
+  document.getElementById('help-overlay').classList.add('open');
+}
+function closeHelp() {
+  document.getElementById('help-overlay').classList.remove('open');
+}
+function handleHelpOverlayClick(e) {
+  if (e.target === document.getElementById('help-overlay')) closeHelp();
+}
+
+/* ================================================================
+   PRIVACY & ABOUT PANELS
+   ================================================================ */
+function togglePrivacyPanel() {
+  const btn  = document.getElementById('privacy-toggle-btn');
+  const body = document.getElementById('privacy-body');
+  const open = body.classList.toggle('open');
+  btn.classList.toggle('open', open);
+}
+
+function toggleAboutPanel() {
+  const btn  = document.getElementById('about-toggle-btn');
+  const body = document.getElementById('about-body');
+  const open = body.classList.toggle('open');
+  btn.classList.toggle('open', open);
+}
+
+/* ================================================================
+   MOBILE TABS
+   ================================================================ */
+function setTab(tab) {
+  document.body.className = 'tab-' + tab;
+  document.querySelectorAll('.mobile-nav-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('nav-' + tab);
+  if (btn) btn.classList.add('active');
+  if (tab === 'map') {
+    setTimeout(() => map.invalidateSize(), 50);
+  }
+}
+
+/* ================================================================
+   TOAST
+   ================================================================ */
+function showToast(msg, ms = 3000) {
+  const container = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className   = 'toast';
+  t.textContent = msg;
+  container.appendChild(t);
+  setTimeout(() => t.remove(), ms);
+}
+
+/* ================================================================
+   UPTIME COUNTER + FPS SHIMMER
+   ================================================================ */
+setInterval(() => {
+  const elapsed = Math.floor((Date.now() - pageStart) / 1000);
+  const mm = String(Math.floor(elapsed / 60)).padStart(2, '0');
+  const ss = String(elapsed % 60).padStart(2, '0');
+  document.getElementById('hud-uptime').textContent = `${mm}:${ss}`;
+}, 1000);
+
+// Animate FPS value with minor jitter for realism
+setInterval(() => {
+  const base = 18.0;
+  const jitter = (Math.random() - 0.5) * 1.4;
+  document.getElementById('stat-fps-val').textContent = (base + jitter).toFixed(1);
+}, 2000);
+
+/* ================================================================
+   KEYBOARD SHORTCUTS
+   ================================================================ */
+document.addEventListener('keydown', e => {
+  const tag = document.activeElement.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  switch (e.key) {
+    case 'Escape':
+      closeHelp();
+      closeSettings();
+      closeDetail();
+      break;
+    case 'm': case 'M':
+      muteToggle();
+      break;
+    case 'h': case 'H':
+      openHelp();
+      break;
+    case 'c': case 'C':
+      clearFeed();
+      break;
+    case 's': case 'S':
+      triggerSimulate('S1');
+      break;
+  }
+});
+
+/* ================================================================
+   INIT
+   ================================================================ */
+loadSettings();
+loadCameras();
+loadZones();
+connectWS();
+
+// Apply sidebar state from saved setting
+if (!sidebarOpen) {
+  document.getElementById('sidebar').classList.add('collapsed');
+  document.getElementById('sidebar-toggle').textContent = '‹';
+}
+
+// Apply tile from saved setting
+if (currentTileKey !== 'dark') {
+  map.removeLayer(TILES.dark);
+  TILES[currentTileKey].addTo(map);
+  document.getElementById('tile-toggle-btn').textContent =
+    { dark: '🌙 Dark Tile', satellite: '🛰 Satellite', street: '🗺 Street' }[currentTileKey];
+}
+</script>
+</body>
+</html>

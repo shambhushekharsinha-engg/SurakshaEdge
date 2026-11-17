@@ -1,0 +1,9 @@
+clip_id,class,onset_s,end_s,expected_tier,performers,location,lighting,split,consent_form_id,date
+POS_S01_gate_T01,positive,2.5,5.0,ALERT,P01_P02,main_gate,daylight,dev,,
+POS_S01_gate_T02,positive,3.0,6.0,ALERT,P01_P02,main_gate,daylight,dev,,
+POS_S02_corridor_T01,positive,1.5,4.0,ALERT,P03_P04,hostel_corridor,indoor,validation,,
+VIS_S01_gate_T01,vision_only,2.0,4.5,ADVISORY,P01_P02,main_gate,daylight,dev,,
+AUD_S01_gate_T01,audio_only,1.0,3.0,ADVISORY,P01,main_gate,daylight,dev,,
+NEG_S01_sports_T01,hard_negative,0.0,30.0,NONE,P05_P06,open_ground,daylight,dev,,
+NEG_S01_dance_T01,hard_negative,0.0,30.0,NONE,P03_P04,corridor,indoor,dev,,
+NEG_S01_hug_T01,hard_negative,0.0,15.0,NONE,P01_P02,main_gate,daylight,validation,,
