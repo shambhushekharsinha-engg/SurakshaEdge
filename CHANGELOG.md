@@ -6,6 +6,21 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
+## [0.4.1] - 2026-11-19
+
+### Fixed (Critical Browser QA Audit)
+- **[CRITICAL] Leaflet script tag not closed** — All modal JS (openCamModal, openCadModal, openBenchmarkModal) was silently ignored; fixed by adding proper </script> closing tag
+- **[CRITICAL] Leaflet moved to <head>** — Prevents L is not defined race condition on page refresh
+- **[CRITICAL] OSM tiles 403 on Render** — Replaced 	ile.openstreetmap.org with CartoDB Voyager tiles (free, no key, no rate limit)
+- **[CRITICAL] Camera card onclick triple-escaped** — openCamModal(\'gate-1\') fixed to openCamModal('gate-1')
+- **[HIGH] CSP blocks Swagger UI** — Added astapi.tiangolo.com to script/style/img sources; skip CSP for /docs, /redoc, /openapi.json
+- **[HIGH] CSP missing CartoDB domain** — Added cartocdn.com to img-src
+- **[MEDIUM] Header overflow at 1280px** — Added overflow-x: hidden; min-width: 0 to #app-header
+- **[MEDIUM] Alert feed placeholder** — Use querySelectorAll('.no-events').forEach on both desktop and mobile feeds
+
+### Tests
+- 48/48 passing (Python 3.13.3, pytest 9.1.1)
+
 ## [0.4.0] — 2026-11-18
 
 ### Added

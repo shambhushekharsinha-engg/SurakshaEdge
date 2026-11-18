@@ -236,7 +236,7 @@ async def get_health() -> Dict[str, Any]:
         "audio_mode": audio_mode,          # "mfcc_cnn" or "energy_fallback"
         "cameras": len(_cameras),
         "uptime_s": round(time.time() - _start_time, 1),
-        "version": "0.4.0",
+        "version": "0.4.1",
     }
 
 
