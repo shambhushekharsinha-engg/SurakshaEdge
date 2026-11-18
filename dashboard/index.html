@@ -4,6 +4,20 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>SurakshaEdge — Edge AI Safety Sentinel</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#0f1117" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="SurakshaEdge" />
+
+  <!-- SEO / OpenGraph -->
+  <meta name="description" content="Edge AI assault detection dashboard — SEVA FIRST 2026 | REG-008-OP-024 | Team SingleThread" />
+  <meta property="og:title" content="SurakshaEdge — Edge AI Safety Sentinel" />
+  <meta property="og:description" content="Real-time pose + audio fusion assault detection. SEVA FIRST 2026." />
+  <meta property="og:type" content="website" />
+
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     /* ===== RESET & BASE ===== */
@@ -1279,6 +1293,11 @@
   <span class="header-badge badge-fallback" id="badge-fallback" title="MFCC-CNN not loaded. S_t responds to ANY loud sound.">⚠ ENERGY FALLBACK</span>
   <span class="header-badge badge-mfcc" id="badge-mfcc">🧠 MFCC-CNN</span>
   <span class="header-badge badge-cams" id="badge-cams">📷 0 cams</span>
+  <!-- API Status Badge (upgraded) -->
+  <span id="api-status-badge" title="API health status" style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:12px;background:#1e293b;border:1px solid #334155;font-size:11px;font-weight:600;cursor:default;transition:all 0.3s;">
+    <span id="api-status-dot" style="width:8px;height:8px;border-radius:50%;background:#64748b;"></span>
+    <span id="api-status-text" style="color:#64748b;">API...</span>
+  </span>
   <div class="header-spacer"></div>
   <button class="header-btn accent-live" onclick="openCamModal('gate-1')" title="Live Edge Camera Stream"><span style="color:#22c55e">●</span> Live CCTV</button>
   <button class="header-btn accent-cad" onclick="openCadModal()" title="Hardware Node & 3D CAD Blueprint">📐 Hardware CAD</button>
@@ -3501,6 +3520,48 @@ if (currentTileKey !== 'dark') {
   TILES[currentTileKey].addTo(map);
   document.getElementById('tile-toggle-btn').textContent =
     { dark: '🌙 Dark Tile', satellite: '🛰 Satellite', street: '🗺 Street' }[currentTileKey];
+}
+
+// ── API Status Badge (polls /health every 30s) ───────────────────────────
+(function initApiStatusBadge() {
+  const dot  = document.getElementById('api-status-dot');
+  const text = document.getElementById('api-status-text');
+  const badge = document.getElementById('api-status-badge');
+  if (!dot || !text || !badge) return;
+
+  async function checkHealth() {
+    try {
+      const r = await fetch('/health', { signal: AbortSignal.timeout(5000) });
+      if (r.ok) {
+        const d = await r.json();
+        dot.style.background  = '#22c55e';
+        dot.style.boxShadow   = '0 0 6px #22c55e88';
+        text.style.color      = '#22c55e';
+        text.textContent      = `API LIVE · v${d.version || '?'} · ↑${Math.round(d.uptime_s)}s`;
+        badge.style.borderColor = '#22c55e44';
+      } else {
+        throw new Error(`HTTP ${r.status}`);
+      }
+    } catch (e) {
+      dot.style.background  = '#ef4444';
+      dot.style.boxShadow   = '0 0 6px #ef444488';
+      text.style.color      = '#ef4444';
+      text.textContent      = '⚠ API DOWN';
+      badge.style.borderColor = '#ef444444';
+    }
+  }
+
+  checkHealth();
+  setInterval(checkHealth, 30_000);
+})();
+
+// ── Service Worker registration (PWA) ────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js', { scope: '/' })
+      .then(() => console.log('[SW] SurakshaEdge service worker registered'))
+      .catch(err => console.warn('[SW] Registration failed:', err));
+  });
 }
 </script>
 </body>

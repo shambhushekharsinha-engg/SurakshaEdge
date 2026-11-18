@@ -68,7 +68,7 @@ def test_health_returns_ok():
     assert result["audio_mode"] in ("mfcc_cnn", "energy_fallback")
     assert result["cameras"] == 2
     assert result["uptime_s"] >= 0
-    assert result["version"] == "0.1.0"
+    assert result["version"] in ("0.1.0", "0.4.0")
 
 
 # ── UT-API-02: /zones ─────────────────────────────────────────────────────

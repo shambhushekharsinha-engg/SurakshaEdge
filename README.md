@@ -10,6 +10,8 @@
 [![Latency](https://img.shields.io/badge/latency-54.8ms_p50_CPU-blue)](eval/)
 [![FPS](https://img.shields.io/badge/throughput-18_FPS_CPU-blue)](eval/)
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/shambhushekharsinha-engg/SurakshaEdge)
+[![CI](https://github.com/shambhushekharsinha-engg/SurakshaEdge/actions/workflows/ci.yml/badge.svg)](https://github.com/shambhushekharsinha-engg/SurakshaEdge/actions/workflows/ci.yml)
+[![Live Demo](https://img.shields.io/badge/demo-surakshaedge.onrender.com-brightgreen)](https://surakshaedge.onrender.com)
 
 > **Live Dashboard** — Start the API and open `http://127.0.0.1:8000` to see the GNIOT campus map with real-time alerts.
 

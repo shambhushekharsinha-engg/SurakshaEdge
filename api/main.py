@@ -20,6 +20,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
+from .middleware import RateLimitMiddleware, RequestLoggingMiddleware, SecurityHeadersMiddleware
 from .schemas import CameraOut, EventPacketIn, FeedbackIn, HealthOut, MetricsOut, SimulateIn
 from .security import check_replay, require_token
 from .store import EventStore
@@ -81,8 +82,12 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="SurakshaEdge API", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="SurakshaEdge API", version="0.4.0", lifespan=lifespan,
+              description="Edge AI assault detection — SEVA FIRST 2026 | REG-008-OP-024")
 
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(RateLimitMiddleware, rate_per_min=60, burst=10)
+app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -154,6 +159,26 @@ async def root():
     return HTMLResponse(content="<h1>SurakshaEdge API</h1><p>Dashboard not found. Open /docs for API.</p>")
 
 
+@app.get("/manifest.json", include_in_schema=False)
+async def manifest():
+    p = Path(__file__).parent.parent / "dashboard" / "manifest.json"
+    if p.exists():
+        return Response(content=p.read_text(encoding="utf-8"), media_type="application/manifest+json")
+    return Response(status_code=404)
+
+
+@app.get("/sw.js", include_in_schema=False)
+async def service_worker():
+    p = Path(__file__).parent.parent / "dashboard" / "sw.js"
+    if p.exists():
+        return Response(
+            content=p.read_text(encoding="utf-8"),
+            media_type="application/javascript",
+            headers={"Service-Worker-Allowed": "/"},
+        )
+    return Response(status_code=404)
+
+
 @app.post("/events", status_code=201)
 async def post_event(
     event: EventPacketIn,
@@ -211,13 +236,57 @@ async def get_health() -> Dict[str, Any]:
         "audio_mode": audio_mode,          # "mfcc_cnn" or "energy_fallback"
         "cameras": len(_cameras),
         "uptime_s": round(time.time() - _start_time, 1),
-        "version": "0.1.0",
+        "version": "0.4.0",
     }
+
+
+@app.get("/livez", include_in_schema=False)
+async def livez() -> Dict[str, str]:
+    """Liveness probe — always returns ok if process is running."""
+    return {"status": "ok"}
+
+
+@app.get("/readyz", include_in_schema=False)
+async def readyz() -> Dict[str, Any]:
+    """Readiness probe — returns ok when cameras are loaded."""
+    if not _cameras:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=503, detail="Cameras not yet loaded")
+    return {"status": "ok", "cameras": len(_cameras)}
 
 
 @app.get("/metrics")
 async def get_metrics() -> Dict[str, Any]:
     return store.get_counters()
+
+
+@app.get("/metrics/prometheus", include_in_schema=False)
+async def get_metrics_prometheus() -> Response:
+    """Prometheus text-format metrics export."""
+    counters = store.get_counters()
+    uptime = round(time.time() - _start_time, 1)
+    lines = [
+        "# HELP surakshaedge_alerts_total Total ALERT-tier events",
+        "# TYPE surakshaedge_alerts_total counter",
+        f"surakshaedge_alerts_total {counters.get('alerts', 0)}",
+        "# HELP surakshaedge_advisories_total Total ADVISORY-tier events",
+        "# TYPE surakshaedge_advisories_total counter",
+        f"surakshaedge_advisories_total {counters.get('advisories', 0)}",
+        "# HELP surakshaedge_frames_total Total frames processed",
+        "# TYPE surakshaedge_frames_total counter",
+        f"surakshaedge_frames_total {counters.get('frames', 0)}",
+        "# HELP surakshaedge_ws_clients Active WebSocket dashboard clients",
+        "# TYPE surakshaedge_ws_clients gauge",
+        f"surakshaedge_ws_clients {len(_ws_clients)}",
+        "# HELP surakshaedge_uptime_seconds Server uptime in seconds",
+        "# TYPE surakshaedge_uptime_seconds gauge",
+        f"surakshaedge_uptime_seconds {uptime}",
+        "# HELP surakshaedge_events_in_memory Events held in RAM ring buffer",
+        "# TYPE surakshaedge_events_in_memory gauge",
+        f"surakshaedge_events_in_memory {len(store._in_memory)}",
+        "",
+    ]
+    return Response(content="\n".join(lines), media_type="text/plain; version=0.0.4; charset=utf-8")
 
 
 @app.post("/simulate")
