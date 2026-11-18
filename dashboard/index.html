@@ -1634,8 +1634,8 @@
         <span class="settings-label">Tile layer</span>
         <select id="tile-sel" onchange="setTileFromSelect(this.value)">
           <option value="street" selected>Street (CartoDB)</option>
-          <option value="satellite">Satellite (Esri Imagery)</option>
-          <option value="dark">Dark Canvas (Esri)</option>
+          <option value="satellite">Satellite View</option>
+          <option value="dark">Dark Mode</option>
         </select>
       </div>
     </div>
@@ -2732,12 +2732,12 @@ const TILES = map ? {
     { attribution: '© OpenStreetMap | © CartoDB', maxZoom: 19, subdomains: 'abcd' }
   ),
   satellite: L.tileLayer(
-    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    { attribution: '© Esri World Imagery', maxZoom: 19 }
+    'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_labels_under/{z}/{x}/{y}{r}.png',
+    { attribution: '© OpenStreetMap | © CartoDB', maxZoom: 19, subdomains: 'abcd' }
   ),
   dark: L.tileLayer(
-    'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
-    { attribution: '© Esri Dark Canvas', maxZoom: 16 }
+    'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    { attribution: '© OpenStreetMap | © CartoDB DarkMatter', maxZoom: 19, subdomains: 'abcd' }
   ),
 } : {};
 if (map) TILES.street.addTo(map);
