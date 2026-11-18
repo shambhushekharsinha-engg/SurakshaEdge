@@ -17,6 +17,7 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import Depends, FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
@@ -82,8 +83,14 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="SurakshaEdge API", version="0.4.0", lifespan=lifespan,
-              description="Edge AI assault detection — SEVA FIRST 2026 | REG-008-OP-024")
+app = FastAPI(
+    title="SurakshaEdge API",
+    version="0.4.1",
+    lifespan=lifespan,
+    description="Edge AI assault detection — SEVA FIRST 2026 | REG-008-OP-024",
+    docs_url=None,    # We serve custom /docs with unpkg CDN
+    redoc_url=None,   # We serve custom /redoc
+)
 
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RateLimitMiddleware, rate_per_min=60, burst=10)
@@ -150,6 +157,30 @@ async def _broadcast(message: Dict[str, Any]):
 # ---------------------------------------------------------------------------
 # REST endpoints
 # ---------------------------------------------------------------------------
+
+
+# ---------------------------------------------------------------------------
+# Custom Swagger UI / ReDoc using unpkg CDN (already in CSP allowlist)
+# Default FastAPI docs use cdn.jsdelivr.net which may be blocked on Render.
+# ---------------------------------------------------------------------------
+
+@app.get("/docs", include_in_schema=False, response_class=HTMLResponse)
+async def custom_swagger_ui():
+    return get_swagger_ui_html(
+        openapi_url="/openapi.json",
+        title="SurakshaEdge API — Swagger UI",
+        swagger_js_url="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js",
+        swagger_css_url="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css",
+    )
+
+
+@app.get("/redoc", include_in_schema=False, response_class=HTMLResponse)
+async def custom_redoc():
+    return get_redoc_html(
+        openapi_url="/openapi.json",
+        title="SurakshaEdge API — ReDoc",
+        redoc_js_url="https://unpkg.com/redoc@latest/bundles/redoc.standalone.js",
+    )
 
 @app.get("/", response_class=HTMLResponse)
 async def root():

@@ -21,8 +21,8 @@
   <meta name="twitter:card" content="summary" />
   <meta name="twitter:title" content="SurakshaEdge — Edge AI Safety Sentinel" />
 
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
   <style>
     /* ===== RESET & BASE ===== */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -2709,12 +2709,24 @@ function updateCameraCard(camId, tier) {
   }
 }
 
+// Camera & alert markers (must be declared before map init to avoid TDZ)
+const cameraMarkers = {};  // cam_id -> { marker, gps, zone }
+const alertMarkers  = {};  // cam_id -> { marker, timer }
+
 /* ================================================================
    MAP SETUP
    ================================================================ */
-const map = L.map('map', { zoomControl: true }).setView([CENTER_LAT, CENTER_LON], 17);
+// Guard: if Leaflet failed to load, show fallback message
+if (typeof L === 'undefined') {
+  console.error('Leaflet failed to load from CDN');
+  document.addEventListener('DOMContentLoaded', () => {
+    const el = document.getElementById('map');
+    if (el) el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#94a3b8;flex-direction:column;gap:8px"><span style="font-size:2rem">🗺</span><span>Map unavailable — CDN blocked</span></div>';
+  });
+}
+const map = (typeof L !== 'undefined') ? L.map('map', { zoomControl: true }).setView([CENTER_LAT, CENTER_LON], 17) : null;
 
-const TILES = {
+const TILES = map ? {
   street: L.tileLayer(
     'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
     { attribution: '© OpenStreetMap | © CartoDB', maxZoom: 19, subdomains: 'abcd' }
@@ -2727,8 +2739,8 @@ const TILES = {
     'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
     { attribution: '© Esri Dark Canvas', maxZoom: 16 }
   ),
-};
-TILES.street.addTo(map);
+} : {};
+if (map) TILES.street.addTo(map);
 
 // Zone polygons are loaded dynamically from /zones endpoint (see loadZones())
 
@@ -2747,9 +2759,9 @@ function setTileFromSelect(val) {
 }
 
 function setTile(key) {
-  if (TILES[currentTileKey]) map.removeLayer(TILES[currentTileKey]);
+  if (map && TILES[currentTileKey]) map.removeLayer(TILES[currentTileKey]);
   currentTileKey = key;
-  if (TILES[key]) TILES[key].addTo(map);
+  if (map && TILES[key]) TILES[key].addTo(map);
   const btn = document.getElementById('tile-toggle-btn');
   if (btn) {
     btn.textContent = {
@@ -2763,9 +2775,7 @@ function setTile(key) {
   saveSetting('tile', key);
 }
 
-// Camera & alert markers
-const cameraMarkers = {};  // cam_id -> { marker, gps, zone }
-const alertMarkers  = {};  // cam_id -> { marker, timer }
+// Camera & alert markers (declared here, populated after map init)
 
 function getCamIcon(tier) {
   const colors = { ALERT: '#ef4444', ADVISORY: '#f97316', NONE: '#64748b' };
@@ -3490,7 +3500,7 @@ function setTab(tab) {
   const btn = document.getElementById('nav-' + tab);
   if (btn) btn.classList.add('active');
   if (tab === 'map') {
-    setTimeout(() => map.invalidateSize(), 50);
+    if (map) setTimeout(() => map.invalidateSize(), 50);
   }
 }
 
