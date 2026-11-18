@@ -112,28 +112,40 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
 _SECURITY_HEADERS = {
     "X-Content-Type-Options": "nosniff",
-    "X-Frame-Options": "DENY",
+    "X-Frame-Options": "SAMEORIGIN",    # Changed from DENY to allow Swagger iframe
     "Referrer-Policy": "no-referrer",
     "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
     "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
     "Content-Security-Policy": (
         "default-src 'self'; "
         "script-src 'self' 'unsafe-inline' 'unsafe-eval' "
-        "https://unpkg.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
+        "https://unpkg.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com "
+        "https://fastapi.tiangolo.com; "
         "style-src 'self' 'unsafe-inline' "
-        "https://unpkg.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
+        "https://unpkg.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com "
+        "https://fastapi.tiangolo.com; "
         "img-src 'self' data: blob: "
-        "https://*.tile.openstreetmap.org https://*.arcgisonline.com https://server.arcgisonline.com; "
-        "connect-src 'self' wss: ws:; "
-        "font-src 'self' https://cdnjs.cloudflare.com; "
+        "https://*.tile.openstreetmap.org https://*.arcgisonline.com https://server.arcgisonline.com "
+        "https://*.basemaps.cartocdn.com https://fastapi.tiangolo.com; "
+        "connect-src 'self' wss: ws: https:; "
+        "font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com; "
         "worker-src 'self' blob:;"
     ),
 }
+
+# Paths that get relaxed headers (Swagger UI, ReDoc need less restrictive CSP)
+_SWAGGER_PATHS = {"/docs", "/redoc", "/openapi.json"}
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         response = await call_next(request)
+        path = request.url.path
+        # For Swagger/ReDoc: skip CSP (they need external CDN assets) but keep other headers
         for header, value in _SECURITY_HEADERS.items():
+            if header == "Content-Security-Policy" and path in _SWAGGER_PATHS:
+                continue  # Let Swagger load its own CDN assets freely
+            if header == "X-Frame-Options" and path in _SWAGGER_PATHS:
+                continue  # Swagger uses iframes internally
             response.headers[header] = value
         return response

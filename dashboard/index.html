@@ -19,6 +19,7 @@
   <meta property="og:type" content="website" />
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
     /* ===== RESET & BASE ===== */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -80,6 +81,8 @@
       padding: 0 16px;
       flex-shrink: 0;
       z-index: 100;
+      overflow-x: hidden;
+      min-width: 0;
     }
     .header-brand {
       display: flex;
@@ -1387,7 +1390,7 @@
     <div id="camera-cards">
       <div class="cam-cards-title">📷 Camera Nodes</div>
       <div class="cam-cards-grid">
-        <div class="cam-card" id="cam-card-gate-1" onclick="openCamModal(\'gate-1\')" title="Click to view live stream & skeleton tracking">
+        <div class="cam-card" id="cam-card-gate-1" onclick="openCamModal('gate-1')" title="Click to view live stream & skeleton tracking">
           <div class="cam-card-top">
             <div class="cam-status-dot idle" id="cam-dot-gate-1"></div>
             <span class="cam-card-id">gate-1</span>
@@ -1395,7 +1398,7 @@
           <div class="cam-card-zone">Main Gate (Knowledge Park II)</div>
           <div class="cam-card-gps">28.4600, 77.4952</div>
         </div>
-        <div class="cam-card" id="cam-card-gate-2" onclick="openCamModal(\'gate-2\')" title="Click to view live stream & skeleton tracking">
+        <div class="cam-card" id="cam-card-gate-2" onclick="openCamModal('gate-2')" title="Click to view live stream & skeleton tracking">
           <div class="cam-card-top">
             <div class="cam-status-dot idle" id="cam-dot-gate-2"></div>
             <span class="cam-card-id">gate-2</span>
@@ -1403,7 +1406,7 @@
           <div class="cam-card-zone">Academic Block / North Gate</div>
           <div class="cam-card-gps">28.4614, 77.4960</div>
         </div>
-        <div class="cam-card" id="cam-card-gate-3" onclick="openCamModal(\'gate-3\')" title="Click to view live stream & skeleton tracking">
+        <div class="cam-card" id="cam-card-gate-3" onclick="openCamModal('gate-3')" title="Click to view live stream & skeleton tracking">
           <div class="cam-card-top">
             <div class="cam-status-dot idle" id="cam-dot-gate-3"></div>
             <span class="cam-card-id">gate-3</span>
@@ -1627,7 +1630,7 @@
       <div class="settings-row">
         <span class="settings-label">Tile layer</span>
         <select id="tile-sel" onchange="setTileFromSelect(this.value)">
-          <option value="street" selected>Street (OpenStreetMap)</option>
+          <option value="street" selected>Street (CartoDB)</option>
           <option value="satellite">Satellite (Esri Imagery)</option>
           <option value="dark">Dark Canvas (Esri)</option>
         </select>
@@ -1981,7 +1984,7 @@
 <div id="toast-container"></div>
 
 <!-- ===== SCRIPTS ===== -->
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+<script>
 /* ================================================================
    ENHANCEMENT 1: LIVE CCTV & SKELETON ENGINE
    ================================================================ */
@@ -2710,8 +2713,8 @@ const map = L.map('map', { zoomControl: true }).setView([CENTER_LAT, CENTER_LON]
 
 const TILES = {
   street: L.tileLayer(
-    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    { attribution: '© OpenStreetMap contributors', maxZoom: 19 }
+    'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+    { attribution: '© OpenStreetMap | © CartoDB', maxZoom: 19, subdomains: 'abcd' }
   ),
   satellite: L.tileLayer(
     'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
@@ -3019,9 +3022,9 @@ function addEventCard(evt, prepend = true) {
   const feed       = document.getElementById('alert-feed');
   const mobileFeed = document.getElementById('mobile-alert-feed');
 
-  // Remove placeholder
-  feed.querySelector('.no-events')?.remove();
-  mobileFeed.querySelector('.no-events')?.remove();
+  // Remove placeholder (all instances)
+  feed.querySelectorAll('.no-events').forEach(el => el.remove());
+  mobileFeed.querySelectorAll('.no-events').forEach(el => el.remove());
 
   const card       = makeCard(evt, false);
   const mobileCard = makeCard(evt, true);
@@ -3563,7 +3566,7 @@ if (currentTileKey !== 'dark') {
   map.removeLayer(TILES.dark);
   TILES[currentTileKey].addTo(map);
   document.getElementById('tile-toggle-btn').textContent =
-    { dark: '🌙 Dark Tile', satellite: '🛰 Satellite', street: '🗺 Street' }[currentTileKey];
+    { dark: '🌙 Dark', satellite: '🛰 Satellite', street: '🗺 CartoDB' }[currentTileKey];
 }
 
 // ── API Status Badge (polls /health every 30s) ───────────────────────────
