@@ -1,5 +1,5 @@
 # SurakshaEdge — Project Context (GSD)
-**Team SingleThread · GNIOT · SEVA FIRST 2026 · REG-008-OP-024**
+**Team SingleThread · GNIOT, Knowledge Park II · SEVA FIRST 2026 · REG-008-OP-024**
 **Demo: Tuesday 10 November 2026**
 *Last updated: 2026-11-01 D12*
 

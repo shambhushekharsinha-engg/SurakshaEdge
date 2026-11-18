@@ -141,7 +141,7 @@ def main():
         cv2.putText(img, tier, (65, 104), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
 
         # Title
-        cv2.putText(img, "SurakshaEdge  |  GNIOT  |  SEVA FIRST 2026",
+        cv2.putText(img, "SurakshaEdge  |  SEVA FIRST 2026",
                     (10, H - 15), cv2.FONT_HERSHEY_SIMPLEX, 0.42, (120, 120, 150), 1)
 
         # Timestamp

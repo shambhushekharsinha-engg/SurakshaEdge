@@ -1,5 +1,5 @@
 # SurakshaEdge — 5-Minute Demo Recording Script
-**Team SingleThread | GNIOT | SEVA FIRST 2026 | REG-008-OP-024**
+**Team SingleThread | GNIOT, Greater Noida | SEVA FIRST 2026 | REG-008-OP-024**
 
 ---
 
