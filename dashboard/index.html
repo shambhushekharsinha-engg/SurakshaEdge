@@ -2728,16 +2728,16 @@ const map = (typeof L !== 'undefined') ? L.map('map', { zoomControl: true }).set
 
 const TILES = map ? {
   street: L.tileLayer(
-    'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-    { attribution: '© OpenStreetMap | © CartoDB', maxZoom: 19, subdomains: 'abcd' }
+    'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    { attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors', maxZoom: 19 }
   ),
   satellite: L.tileLayer(
-    'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_labels_under/{z}/{x}/{y}{r}.png',
-    { attribution: '© OpenStreetMap | © CartoDB', maxZoom: 19, subdomains: 'abcd' }
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+    { attribution: 'Tiles © Esri', maxZoom: 19 }
   ),
   dark: L.tileLayer(
-    'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-    { attribution: '© OpenStreetMap | © CartoDB DarkMatter', maxZoom: 19, subdomains: 'abcd' }
+    'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+    { attribution: '© Esri', maxZoom: 16 }
   ),
 } : {};
 if (map) TILES.street.addTo(map);
