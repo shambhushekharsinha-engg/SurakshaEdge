@@ -31,11 +31,11 @@
 
 ## 🎬 5-Minute Master Pitch & Technical Walkthrough Video
 
-[![SurakshaEdge Master Video Demo](docs/images/tactical_cockpit.png)](https://youtu.be/SurakshaEdge-Demo)
+[![SurakshaEdge Master Video Demo](docs/images/tactical_cockpit.png)](https://youtu.be/RvBzNZJznlI)
 
 > **▶️ Video Demonstration (04:55.1 | 1080p FHD @ 30 FPS):**  
 > **Master File:** [`data/SEVA_FIRST_SurakshaEdge_MASTER_DEMO.mp4`](data/SEVA_FIRST_SurakshaEdge_MASTER_DEMO.mp4) *(70.4 MB)*  
-> **YouTube Link:** `[Upload to YouTube as Unlisted & Paste Link Here in Morning]` *(e.g. https://youtu.be/...)*
+> **YouTube Link:** [https://youtu.be/RvBzNZJznlI](https://youtu.be/RvBzNZJznlI) *(Public)*
 
 ### ⏱️ Video Act Breakdown
 * **[0:00 - 0:35] The Reality & The Gap:** NCRB 2023 statistics (4.48L crimes against women), passive CCTV post-mortem failure, and the need for zero-touch edge AI.

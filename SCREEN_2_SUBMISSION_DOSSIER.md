@@ -29,10 +29,10 @@
 # 1. 5-Minute Recorded Video Pitch Submission
 
 ### Video Pitch Submission Details
-* **Video Pitch URL:** `[PASTE YOUTUBE UNLISTED URL HERE IN THE MORNING]` *(e.g. https://youtu.be/...)*
+* **Video Pitch URL:** `https://youtu.be/RvBzNZJznlI`
 * **Master Video File:** `surakshaedge/data/SEVA_FIRST_SurakshaEdge_MASTER_DEMO.mp4`
 * **Video Duration:** Exactly 04:55.1 (295.1 seconds — strictly under 5:00 limit)
-* **Resolution & Format:** 1080p FHD (1920×1080 @ 30 FPS, H.264 / AAC Audio, 70.4 MB)
+* **Resolution & Format:** 1080p FHD (1920×1080 @ 30 FPS, H.264 / AAC Audio, 70.4 MB, Public)
 * **Presentation Scope:** Full-screen edge-to-edge project interface with live moving COCO-17 human skeletons in CCTV modal, hard-negative jogging suppression, live grapple assault alert surging to $K_t=0.78, S_t=0.85$, OpenStreetMap campus GIS markers, 3D CAD enclosure modal, and Swagger API docs.
 * **Speakers / Voiceover:** Shambhu Shekhar Sinha (AI Architecture, Pipeline, Pitch) & Vaibhav Kumar Tiwari (QA, Latency Profiling, DPDP Consent).
 
