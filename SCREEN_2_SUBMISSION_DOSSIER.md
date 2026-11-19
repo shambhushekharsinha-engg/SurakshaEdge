@@ -417,14 +417,16 @@ To maintain rigorous engineering integrity, Team SingleThread operates on a stri
 |                                TEAM SINGLETHREAD ROLES                                  |
 |                                                                                         |
 |   SHAMBHU SHEKHAR SINHA                          VAIBHAV KUMAR TIWARI                   |
-|   Team Lead & AI/Software Architect              QA Lead & Systems Validation Engineer  |
+|   Team Lead & Primary System Architect           Field Coordination & Ethics Support    |
 |                                                                                         |
-|   - Core Edge AI Pipeline Development            - End-to-End Test Suite Ownership      |
-|   - YOLOv8-Pose & Kinematics Algorithms          - Benchmark Profiling & Latency Logger |
-|   - Temporal Fusion Gating State Machine         - Video & Audio Dataset Collection     |
-|   - FastAPI Backend & WebSocket Streaming        - Ethics Protocols & Consent Registry  |
-|   - Leaflet Geospatial UI & Web Dashboard        - Privacy Audits (PT-01 to PT-06 Soak) |
-|   - Video Pitch Delivery & Technical Script      - Hardware Circuit Assembly & Relay    |
+|   - Full End-to-End Edge AI Architecture         - Campus Physical Site Survey (GNIOT)  |
+|   - YOLOv8-Pose, Kinematics & Audio CNN Models   - Participant Consent Documentation    |
+|   - 1.5s Temporal Fusion Gating State Machine    - Staged Recording Support             |
+|   - FastAPI Backend, WebSockets & AES Encryption - Team Deliverable Coordination        |
+|   - Interactive Leaflet GIS Cockpit & CAD Modal                                         |
+|   - 48 Pytest Automated Suites & Benchmarking                                           |
+|   - Hardware 3D CAD Enclosure & Schematics                                              |
+|   - Master Video Pitch Delivery & Documentation                                         |
 +-----------------------------------------------------------------------------------------+
 ```
 
@@ -432,8 +434,8 @@ To maintain rigorous engineering integrity, Team SingleThread operates on a stri
 
 | Team Member | Domain | Key Responsibilities & Owned Deliverables |
 | :--- | :--- | :--- |
-| **Shambhu Shekhar Sinha**<br>*(Team Lead)* | AI, Architecture & Frontend | • Architecture design of the dual-stream ingestion pipeline.<br>• Biomechanical formulation of wrist speed ($V_w$), angular velocity ($A_j$), and proximity ($Q_p$).<br>• FastAPI WebSocket server and SQLite encrypted event store.<br>• Interactive Leaflet map dashboard with live telemetry and audio-visual siren controls.<br>• 5-minute video pitch presentation, technical narrative, and system documentation. |
-| **Vaibhav Kumar Tiwari**<br>*(Systems & QA)* | QA, Benchmarking & Hardware | • Execution and maintenance of 48 automated test suites (`pytest`).<br>• Latency benchmarking across CPU and GPU hardware (p50, p95, p99 profiling).<br>• Consented dataset curation (staged positive assaults, vocal distress audio, and hard negatives).<br>• Execution of Data, Consent, and Ethics protocols in compliance with DPDP Act 2023.<br>• Hardware assembly: PoE wiring, optocoupled relay integration, and benchtop testing. |
+| **Shambhu Shekhar Sinha**<br>*(Team Lead & Primary Architect)* | Full-Stack AI, Systems, Hardware & Documentation | • **End-to-End Edge AI Architecture:** Designed and built the complete dual-stream pipeline from RTSP ingest to alert dispatch.<br>• **Core AI & ML Development:** Formulated the biomechanical kinematics engine ($V_w, A_j, Q_p \to K_t$), trained the MFCC-CNN scream classifier ($S_t$), and engineered the 1.5-second temporal coincidence fusion gate.<br>• **Backend & Cryptography:** Built the FastAPI service, real-time WebSocket push engine, and AES-256-GCM authenticated in-memory RAM encryption.<br>• **Frontend & UI Engineering:** Built the full Leaflet GIS campus cockpit, real-time OpenStreetMap telemetry HUD, CCTV skeleton modal, and 3D CAD enclosure viewer.<br>• **Benchmarking & Testing:** Authored and verified all 48 automated test suites (`pytest tests/`), empirical latency profilers (89.4ms lag), and PT-01 privacy soak tests.<br>• **Hardware & CAD Engineering:** 3D CAD enclosure design ($180 \times 130 \times 65\text{ mm}$), PoE+ wiring schematics, and optocoupled relay circuit design.<br>• **Pitch & Documentation:** Delivered the 5-minute master pitch presentation, comprehensive submission dossier, and deployment runbooks. |
+| **Vaibhav Kumar Tiwari**<br>*(Field Support & Documentation)* | Campus Coordination & Ethics Admin | • **Physical Site Survey:** Assisted in surveying GNIOT campus gates and corridors for camera placement.<br>• **Consent Registry:** Handled participant documentation and consent forms for staged training clips in accordance with DPDP Act 2023 guidelines.<br>• **Testing Assistance:** Assisted as an actor in staged non-assaultive hard-negative clips (jogging/walking) for false-positive validation.<br>• **Administrative Coordination:** Supported submission tracking and team coordination. |
 
 ---
 
