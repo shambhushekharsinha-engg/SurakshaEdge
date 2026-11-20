@@ -220,6 +220,9 @@
       min-width: 0;
     }
     #map { width: 100%; height: 100%; }
+    #map.tactical-dark-mode .leaflet-tile-pane {
+      filter: brightness(0.72) invert(1) contrast(2.2) hue-rotate(205deg) saturate(0.35);
+    }
 
     /* map controls panel */
     #map-controls {
@@ -1633,9 +1636,9 @@
       <div class="settings-row">
         <span class="settings-label">Tile layer</span>
         <select id="tile-sel" onchange="setTileFromSelect(this.value)">
-          <option value="street" selected>Street (CartoDB)</option>
-          <option value="satellite">Satellite View</option>
-          <option value="dark">Dark Mode</option>
+          <option value="street" selected>🗺 Street (OpenStreetMap)</option>
+          <option value="satellite">🛰 Satellite (Esri Imagery)</option>
+          <option value="dark">🌙 Dark (Tactical Ops)</option>
         </select>
       </div>
     </div>
@@ -2729,18 +2732,22 @@ const map = (typeof L !== 'undefined') ? L.map('map', { zoomControl: true }).set
 const TILES = map ? {
   street: L.tileLayer(
     'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-    { attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors', maxZoom: 19 }
+    { attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors', maxZoom: 19, detectRetina: true }
   ),
   satellite: L.tileLayer(
-    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
-    { attribution: 'Tiles © Esri', maxZoom: 19 }
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    { attribution: 'Tiles © Esri World Imagery', maxZoom: 19, detectRetina: true }
   ),
   dark: L.tileLayer(
-    'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
-    { attribution: '© Esri', maxZoom: 16 }
+    'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    { attribution: '© OpenStreetMap contributors (Tactical Ops)', maxZoom: 19, detectRetina: true }
   ),
 } : {};
-if (map) TILES.street.addTo(map);
+if (map) {
+  const initialKey = (TILES[currentTileKey]) ? currentTileKey : 'street';
+  TILES[initialKey].addTo(map);
+  if (initialKey === 'dark') document.getElementById('map')?.classList.add('tactical-dark-mode');
+}
 
 // Zone polygons are loaded dynamically from /zones endpoint (see loadZones())
 
@@ -2762,12 +2769,17 @@ function setTile(key) {
   if (map && TILES[currentTileKey]) map.removeLayer(TILES[currentTileKey]);
   currentTileKey = key;
   if (map && TILES[key]) TILES[key].addTo(map);
+  const mapEl = document.getElementById('map');
+  if (mapEl) {
+    if (key === 'dark') mapEl.classList.add('tactical-dark-mode');
+    else mapEl.classList.remove('tactical-dark-mode');
+  }
   const btn = document.getElementById('tile-toggle-btn');
   if (btn) {
     btn.textContent = {
       street: '🗺 Street',
       satellite: '🛰 Satellite',
-      dark: '🌙 Dark',
+      dark: '🌙 Dark (Tactical)',
     }[key] || '🗺 Map';
   }
   const sel = document.getElementById('tile-sel');
