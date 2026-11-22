@@ -1517,7 +1517,7 @@
   <!-- MAP WRAP -->
   <div id="map-wrap">
     <div id="map"></div>
-    <div id="map-status-pill" class="map-status-pill">🌙 Esri Dark Tactical (Live)</div>
+    <div id="map-status-pill" class="map-status-pill">🌙 Tactical Canvas (Live)</div>
 
     <!-- Map controls -->
     <div id="map-controls">
@@ -3019,12 +3019,37 @@ function attachTileErrorWatchdog() {
   });
 }
 
+function getMapProviderTag() {
+  const customKey = localStorage.getItem('suraksha_map_key');
+  if (customKey && customKey.startsWith('pk.')) return 'Mapbox 4K';
+  if (customKey && customKey !== '••••••••••••') return 'MapTiler';
+  if (typeof window !== 'undefined' && window._ENV_MAP_TOKEN && window._ENV_MAP_TOKEN.startsWith('pk.')) return 'Mapbox 4K';
+  if (typeof window !== 'undefined' && window._ENV_MAP_TOKEN) return 'MapTiler';
+  return 'Esri';
+}
+
+function updateMapStatusPill(key) {
+  key = key || currentTileKey || 'dark';
+  const pill = document.getElementById('map-status-pill');
+  if (pill) {
+    const providerTag = getMapProviderTag();
+    pill.textContent = {
+      dark: `🌙 ${providerTag} Dark Tactical (Live)`,
+      street: `🗺 ${providerTag} Street (Live)`,
+      satellite: `🛰 ${providerTag} Satellite (Live)`,
+    }[key] || `🗺 ${providerTag} (Live)`;
+    pill.style.borderColor = 'rgba(148, 163, 184, 0.25)';
+  }
+}
+
 if (map) {
   buildTileLayers();
   const initialKey = (TILES[currentTileKey]) ? currentTileKey : 'dark';
+  currentTileKey = initialKey;
   TILES[initialKey].addTo(map);
   if (initialKey === 'dark') document.getElementById('map')?.classList.add('tactical-dark-mode');
   attachTileErrorWatchdog();
+  updateMapStatusPill(initialKey);
 }
 
 // Zone polygons are loaded dynamically from /zones endpoint (see loadZones())
@@ -3060,17 +3085,7 @@ function setTile(key) {
       satellite: '🛰 Satellite',
     }[key] || '🗺 Map';
   }
-  const pill = document.getElementById('map-status-pill');
-  if (pill) {
-    const customKey = localStorage.getItem('suraksha_map_key');
-    const providerTag = (customKey && customKey.startsWith('pk.')) ? 'Mapbox 4K' : (customKey ? 'MapTiler' : 'Esri');
-    pill.textContent = {
-      dark: `🌙 ${providerTag} Dark Tactical (Live)`,
-      street: `🗺 ${providerTag} Street (Live)`,
-      satellite: `🛰 ${providerTag} Satellite (Live)`,
-    }[key] || '🗺 Basemap Active';
-    pill.style.borderColor = 'rgba(148, 163, 184, 0.25)';
-  }
+  updateMapStatusPill(key);
   const sel = document.getElementById('tile-sel');
   if (sel) sel.value = key;
   saveSetting('tile', key);
@@ -3078,6 +3093,7 @@ function setTile(key) {
 
 function applyCustomMapKey(token) {
   token = (token || '').trim();
+  if (token === '••••••••••••') return;
   if (token) {
     localStorage.setItem('suraksha_map_key', token);
   } else {
@@ -3087,8 +3103,8 @@ function applyCustomMapKey(token) {
   buildTileLayers(token);
   attachTileErrorWatchdog();
   if (map && TILES[currentTileKey]) TILES[currentTileKey].addTo(map);
-  setTile(currentTileKey);
-  showToast(token ? '✅ 4K High-Res Map Key Active' : 'Restored to built-in Esri engine');
+  updateMapStatusPill(currentTileKey);
+  showToast(token || (typeof window !== 'undefined' && window._ENV_MAP_TOKEN) ? '✅ 4K High-Res Map Key Active' : 'Restored to built-in Esri engine');
 }
 
 // Camera & alert markers (declared here, populated after map init)
