@@ -2762,16 +2762,16 @@ const map = (typeof L !== 'undefined') ? L.map('map', { zoomControl: true }).set
 
 const TILES = map ? {
   street: L.tileLayer(
-    'https://tiles.openfreemap.org/styles/liberty/{z}/{x}/{y}.png',
-    { attribution: '© <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a> © <a href="https://www.openstreetmap.org/copyright" target="_blank">OSM</a> contributors', maxZoom: 20, detectRetina: true }
+    'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+    { attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions" target="_blank">CARTO</a>', subdomains: 'abcd', maxZoom: 20, detectRetina: true }
   ),
   satellite: L.tileLayer(
     'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     { attribution: 'Tiles © Esri World Imagery', maxZoom: 19, detectRetina: true }
   ),
   dark: L.tileLayer(
-    'https://tiles.openfreemap.org/styles/liberty/{z}/{x}/{y}.png',
-    { attribution: '© <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a> © OSM contributors (Tactical Ops)', maxZoom: 20, detectRetina: true }
+    'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    { attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions" target="_blank">CARTO</a> (Tactical Ops)', subdomains: 'abcd', maxZoom: 20, detectRetina: true }
   ),
 } : {};
 if (map) {
