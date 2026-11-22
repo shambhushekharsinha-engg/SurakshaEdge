@@ -1517,14 +1517,14 @@
   <!-- MAP WRAP -->
   <div id="map-wrap">
     <div id="map"></div>
-    <div id="map-status-pill" class="map-status-pill">🛰 Esri World Imagery (Live)</div>
+    <div id="map-status-pill" class="map-status-pill">🌙 Esri Dark Tactical (Live)</div>
 
     <!-- Map controls -->
     <div id="map-controls">
       <button class="map-ctrl-btn" onclick="clearAlertMarkers()" title="Clear alert pins">🗺 Clear Alerts</button>
       <button class="map-ctrl-btn" onclick="showAllCameras()" title="Zoom to all cameras">📍 All Cameras</button>
       <button class="map-ctrl-btn" onclick="showZoneInfo()" title="Zone info">🔍 Zone Info</button>
-      <button class="map-ctrl-btn" id="tile-toggle-btn" onclick="toggleTile()">🛰 Satellite</button>
+      <button class="map-ctrl-btn" id="tile-toggle-btn" onclick="toggleTile()">🌙 Dark (Tactical)</button>
     </div>
 
     <!-- Sidebar collapse toggle (desktop only) -->
@@ -1541,7 +1541,7 @@
         <span class="exec-card-pill">DPDP Act 2023 Compliant</span>
       </div>
       <div class="exec-card-body">
-        <strong>Dual-Signal Fusion Sentinel</strong>: Vision Kinematics ($K_t \ge 0.62$) &times; Audio Distress ($S_t \ge 0.70$) gated within <strong>1.5s</strong> window. Zero video disk writes.
+        <strong>Dual-Signal Fusion Sentinel</strong>: Vision Kinematics (<em>K<sub>t</sub></em> &ge; 0.62) &times; Audio Distress (<em>S<sub>t</sub></em> &ge; 0.70) gated within <strong>1.5s</strong> window. Zero video disk writes.
       </div>
       <div class="exec-card-metrics">
         <div class="em-item">
@@ -1828,14 +1828,24 @@
     </div>
 
     <div class="settings-section">
-      <h3>Map Tile</h3>
-      <div class="settings-row">
-        <span class="settings-label">Tile layer</span>
+      <h3>Map Basemap &amp; Visual Clarity</h3>
+      <div class="settings-row" style="margin-bottom:8px;">
+        <span class="settings-label">Active layer</span>
         <select id="tile-sel" onchange="setTileFromSelect(this.value)">
-          <option value="street" selected>🗺 Street (OpenStreetMap)</option>
-          <option value="satellite">🛰 Satellite (Esri Imagery)</option>
-          <option value="dark">🌙 Dark (Tactical Ops)</option>
+          <option value="dark" selected>🌙 Dark Tactical (High Contrast, Razor Sharp)</option>
+          <option value="street">🗺 Street (Esri World Street Map)</option>
+          <option value="satellite">🛰 Satellite (Aerial Imagery)</option>
         </select>
+      </div>
+      <div style="font-size:.65rem;color:var(--muted);margin:8px 0 4px;line-height:1.4;">
+        <strong>4K Retina Sub-Meter Provider (Optional)</strong>: To enable sub-meter satellite photography and crisp retina vector streets, paste a free Mapbox public token or MapTiler key:
+      </div>
+      <div class="settings-row">
+        <span class="settings-label">Free API Key</span>
+        <input type="text" id="map-api-key" placeholder="pk.eyJ... (Mapbox) or key (MapTiler)" style="flex:1;background:var(--card);border:1px solid var(--border);color:var(--text);padding:4px 8px;border-radius:4px;font-size:.72rem;" onchange="applyCustomMapKey(this.value)" />
+      </div>
+      <div style="font-size:.6rem;color:#38bdf8;margin-top:3px;">
+        <a href="https://account.mapbox.com/auth/signup/" target="_blank" rel="noopener" style="color:#38bdf8;text-decoration:none;">Get free Mapbox token (50,000 free map loads/mo, no card required) &rarr;</a>
       </div>
     </div>
 
@@ -2703,7 +2713,7 @@ let advCount      = 0;
 let muted         = false;
 let sirenVolume   = 0.70;
 let sidebarOpen   = true;
-let currentTileKey = 'satellite';
+let currentTileKey = 'dark';
 let detailEvent   = null;   // currently shown event in detail panel
 let feedCards     = [];     // [{id, el, evt}]
 let mobileCards   = [];
@@ -2727,6 +2737,10 @@ function loadSettings() {
     if (s.strobe  !== undefined) document.getElementById('strobe-toggle').checked = s.strobe;
     if (s.autoclear !== undefined) document.getElementById('autoclear-sel').value = s.autoclear;
     if (s.tile    !== undefined) { currentTileKey = s.tile; document.getElementById('tile-sel').value = s.tile; }
+    else { currentTileKey = 'dark'; }
+    const savedMapKey = localStorage.getItem('suraksha_map_key');
+    const mapKeyInp = document.getElementById('map-api-key');
+    if (mapKeyInp && savedMapKey) mapKeyInp.value = savedMapKey;
     if (s.sidebar !== undefined) sidebarOpen = s.sidebar;
     const volSlider = document.getElementById('vol-slider');
     volSlider.value = Math.round(sirenVolume * 100);
@@ -2923,28 +2937,65 @@ if (typeof L === 'undefined') {
     if (el) el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#94a3b8;flex-direction:column;gap:8px"><span style="font-size:2rem">🗺</span><span>Map unavailable — CDN blocked</span></div>';
   });
 }
-const map = (typeof L !== 'undefined') ? L.map('map', { zoomControl: true }).setView([CENTER_LAT, CENTER_LON], 17) : null;
+const map = (typeof L !== 'undefined') ? L.map('map', { zoomControl: true }).setView([CENTER_LAT, CENTER_LON], 16) : null;
 
-const TILES = map ? {
-  street: L.tileLayer(
-    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
-    { attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ', maxZoom: 19, detectRetina: false }
-  ),
-  satellite: L.tileLayer(
-    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    { attribution: 'Tiles © Esri World Imagery', maxZoom: 19, detectRetina: false }
-  ),
-  dark: L.tileLayer(
-    'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
-    { attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ (Tactical Ops)', maxNativeZoom: 16, maxZoom: 19, detectRetina: false }
-  ),
-} : {};
-if (map) {
-  const initialKey = (TILES[currentTileKey]) ? currentTileKey : 'satellite';
-  TILES[initialKey].addTo(map);
-  if (initialKey === 'dark') document.getElementById('map')?.classList.add('tactical-dark-mode');
+let TILES = {};
 
-  // Resilient Tile Error Monitoring & Automatic Failover
+function buildTileLayers(token) {
+  token = token || localStorage.getItem('suraksha_map_key') || '';
+  if (token && token.startsWith('pk.')) {
+    // Mapbox 4K Retina Provider
+    TILES = {
+      dark: L.tileLayer(
+        `https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/{z}/{x}/{y}@2x?access_token=${token}`,
+        { attribution: '© Mapbox © OpenStreetMap', tileSize: 512, zoomOffset: -1, maxZoom: 22 }
+      ),
+      street: L.tileLayer(
+        `https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/{z}/{x}/{y}@2x?access_token=${token}`,
+        { attribution: '© Mapbox © OpenStreetMap', tileSize: 512, zoomOffset: -1, maxZoom: 22 }
+      ),
+      satellite: L.tileLayer(
+        `https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/tiles/{z}/{x}/{y}@2x?access_token=${token}`,
+        { attribution: '© Mapbox © DigitalGlobe', tileSize: 512, zoomOffset: -1, maxZoom: 22 }
+      ),
+    };
+  } else if (token) {
+    // MapTiler High-Resolution Provider
+    TILES = {
+      dark: L.tileLayer(
+        `https://api.maptiler.com/maps/dataviz-dark/256/{z}/{x}/{y}.png?key=${token}`,
+        { attribution: '© MapTiler © OpenStreetMap', maxZoom: 20 }
+      ),
+      street: L.tileLayer(
+        `https://api.maptiler.com/maps/streets-v2/256/{z}/{x}/{y}.png?key=${token}`,
+        { attribution: '© MapTiler © OpenStreetMap', maxZoom: 20 }
+      ),
+      satellite: L.tileLayer(
+        `https://api.maptiler.com/maps/satellite/256/{z}/{x}/{y}.jpg?key=${token}`,
+        { attribution: '© MapTiler', maxZoom: 20 }
+      ),
+    };
+  } else {
+    // Built-in High-Contrast Esri Engine (Default — Free, No Key, Zero Disruption)
+    TILES = {
+      dark: L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+        { attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ (Tactical Ops)', maxNativeZoom: 16, maxZoom: 19, detectRetina: false }
+      ),
+      street: L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+        { attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ', maxZoom: 19, detectRetina: false }
+      ),
+      satellite: L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        { attribution: 'Tiles © Esri World Imagery', maxZoom: 19, detectRetina: false }
+      ),
+    };
+  }
+}
+
+function attachTileErrorWatchdog() {
+  if (!map) return;
   Object.entries(TILES).forEach(([key, layer]) => {
     let errStreak = 0;
     layer.on('tileerror', function() {
@@ -2956,8 +3007,8 @@ if (map) {
           pill.textContent = '⚠️ CDN Degraded · Tactical Grid Active';
           pill.style.borderColor = 'rgba(239, 68, 68, 0.4)';
         }
-        if (key !== 'satellite' && TILES['satellite'] && currentTileKey === key) {
-          setTile('satellite');
+        if (key !== 'dark' && TILES['dark'] && currentTileKey === key) {
+          setTile('dark');
         }
       }
     });
@@ -2967,11 +3018,19 @@ if (map) {
   });
 }
 
+if (map) {
+  buildTileLayers();
+  const initialKey = (TILES[currentTileKey]) ? currentTileKey : 'dark';
+  TILES[initialKey].addTo(map);
+  if (initialKey === 'dark') document.getElementById('map')?.classList.add('tactical-dark-mode');
+  attachTileErrorWatchdog();
+}
+
 // Zone polygons are loaded dynamically from /zones endpoint (see loadZones())
 
 // Tile toggle
 function toggleTile() {
-  const order = ['street', 'satellite', 'dark'];
+  const order = ['dark', 'street', 'satellite'];
   const idx = order.indexOf(currentTileKey);
   const next = order[(idx + 1) % order.length];
   setTile(next);
@@ -2995,23 +3054,40 @@ function setTile(key) {
   const btn = document.getElementById('tile-toggle-btn');
   if (btn) {
     btn.textContent = {
+      dark: '🌙 Dark (Tactical)',
       street: '🗺 Street',
       satellite: '🛰 Satellite',
-      dark: '🌙 Dark (Tactical)',
     }[key] || '🗺 Map';
   }
   const pill = document.getElementById('map-status-pill');
   if (pill) {
+    const customKey = localStorage.getItem('suraksha_map_key');
+    const providerTag = (customKey && customKey.startsWith('pk.')) ? 'Mapbox 4K' : (customKey ? 'MapTiler' : 'Esri');
     pill.textContent = {
-      street: '🗺 Esri Street Map (Live)',
-      satellite: '🛰 Esri World Imagery (Live)',
-      dark: '🌙 Esri Dark Canvas (Live)',
+      dark: `🌙 ${providerTag} Dark Tactical (Live)`,
+      street: `🗺 ${providerTag} Street (Live)`,
+      satellite: `🛰 ${providerTag} Satellite (Live)`,
     }[key] || '🗺 Basemap Active';
     pill.style.borderColor = 'rgba(148, 163, 184, 0.25)';
   }
   const sel = document.getElementById('tile-sel');
   if (sel) sel.value = key;
   saveSetting('tile', key);
+}
+
+function applyCustomMapKey(token) {
+  token = (token || '').trim();
+  if (token) {
+    localStorage.setItem('suraksha_map_key', token);
+  } else {
+    localStorage.removeItem('suraksha_map_key');
+  }
+  if (map && TILES[currentTileKey]) map.removeLayer(TILES[currentTileKey]);
+  buildTileLayers(token);
+  attachTileErrorWatchdog();
+  if (map && TILES[currentTileKey]) TILES[currentTileKey].addTo(map);
+  setTile(currentTileKey);
+  showToast(token ? '✅ 4K High-Res Map Key Active' : 'Restored to built-in Esri engine');
 }
 
 // Camera & alert markers (declared here, populated after map init)
@@ -3177,7 +3253,7 @@ function loadZones() {
         poly.bindTooltip(z.name, {
           permanent: true,
           direction: isCampus ? 'top' : 'bottom',
-          offset: isCampus ? [0, 28] : [0, -18],
+          offset: isCampus ? [0, -25] : [0, 25],
           className: 'zone-label',
           opacity: 0.9,
         });

@@ -1,8 +1,8 @@
 {
   "frame_count": 10000,
-  "median_latency_ms": 3.4968,
-  "p95_latency_ms": 5.3409,
-  "ram_delta_mb": -23.7461,
+  "median_latency_ms": 3.5075,
+  "p95_latency_ms": 5.3136,
+  "ram_delta_mb": -23.7891,
   "disk_write_count": 0,
   "new_video_files_found": [],
   "real_imports": false,
