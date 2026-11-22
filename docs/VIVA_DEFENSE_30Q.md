@@ -14,23 +14,23 @@
 
 ### Q1. How does SurakshaEdge distinguish a hug from an assault?
 
-**Answer:** SurakshaEdge uses a **temporal coincidence gate**: both audio and vision scores must exceed their respective thresholds within a window of **Δt ≤ 150 ms** for an ALERT to fire. The kinematic score K_t is computed as `K_t = α·V_w + β·Δpose + γ·Δprox`, weighting wrist velocity, pose-skeleton divergence, and inter-body proximity. A hug produces low V_w (slow wrap motion), low Δpose (bodies align rather than recoil), and high Δprox (bodies close together) — yielding K_t below the threshold. An assault produces high V_w (sudden strike), high Δpose (victim recoil), and a characteristic audio spike simultaneously, pushing K_t above threshold within the coincidence window.
+**Answer:** SurakshaEdge uses a **1.5-second temporal coincidence gate** (`GATE_S = 1.5` in `edge/fusion.py`): both audio (S_flag) and vision (K_flag) must fire within any 1.5-second window for a full ALERT. The kinematic score `K_t = 0.4·V_w + 0.3·A_j + 0.3·Q_p` captures wrist velocity, limb angular velocity, and close-contact proximity. A hug produces low V_w (slow wrap motion), low A_j (smooth arm motion), and elevated Q_p (bodies close) — net K_t stays below 0.62. An assault produces high V_w (rapid strike/flailing), high A_j (violent joint angle changes), coincident audio spike (S_t ≥ 0.70), and both flags fire within the 1.5s gate, triggering ALERT.
 
-**Evidence:** `edge/kinematics.py::KinematicsEngine.compute()`, `tests/unit/test_kinematics.py::test_hug_vs_assault_discrimination`
+**Evidence:** `edge/kinematics.py::KinematicsEngine.compute()`, `tests/unit/test_kinematics.py::test_rhythmic_motion_entropy_suppresses_vw + test_chaotic_motion_entropy_amplifies_vw`
 
 ---
 
 ### Q2. Walk us through the K_t formula and explain each term.
 
-**Answer:** `K_t = α·V_w + β·Δpose + γ·Δprox` where **V_w** is the weighted mean wrist velocity (m/s) of both detected persons, capturing the speed of arm/hand motion; **Δpose** is the Frobenius norm of the difference between consecutive pose-keypoint matrices, capturing whole-body recoil; and **Δprox** is the inverse of inter-body centroid distance, penalising very-close contact differently from arms-length impact. Coefficients α=0.5, β=0.3, γ=0.2 were calibrated on our synthetic + augmented dataset to maximise F1 score on the lab evaluation set. In SurakshaEdge v0.4.1, K_t is additionally modulated by **trajectory entropy**: `K_t_adj = K_t × (0.5 + 0.5 × H_traj)`, suppressing rhythmic, predictable motion (friendly horseplay) while amplifying chaotic, unpredictable kinematics characteristic of real assaults.
+**Answer:** The actual formula is `K_t = 0.4·V_w + 0.3·A_j + 0.3·Q_p` (see `edge/kinematics.py`, constants `W_VW=0.4, W_AJ=0.3, W_QP=0.3`). **V_w** is torso-normalised wrist speed — rapid wrist displacement relative to body size, clipped to [0,1]. **A_j** is normalised limb angular velocity — rate of elbow/shoulder angle change, capturing grappling and striking. **Q_p** is a binary close-contact flag (1.0 if bounding-box IoU ≥ 0.15 or bodies closing faster than 0.5 torso-lengths/s, else 0.0). In v0.4.1, V_w is first entropy-adjusted: `V_w_adj = V_w × (0.5 + 0.5 × H_spectral)` where H_spectral is the FFT-based trajectory entropy — rhythmic motion (dancing, jogging) gets entropy ≈ 0.1–0.3, reducing V_w contribution; chaotic struggle gets entropy ≈ 0.7–1.0, preserving full V_w.
 
 **Evidence:** `edge/kinematics.py`, `tests/unit/test_kinematics.py::test_rhythmic_motion_entropy_suppresses_vw`
 
 ---
 
-### Q3. What is the temporal coincidence gate and why is 150 ms the right window?
+### Q3. What is the temporal coincidence gate and why is 1.5 seconds the right window?
 
-**Answer:** The temporal coincidence gate requires that the audio classifier score S_t and the kinematic score K_t both cross their thresholds within **150 ms** of each other. This window is chosen based on the physiological reaction time of a physical impact: an audible sound (impact, scream) and the visible body motion it causes are separated by ≤ 100 ms in real-world events (audio travels at 343 m/s; at 5 m the delay is ~15 ms, plus camera frame latency). Setting Δt = 150 ms ensures genuine co-occurrence is captured while rejecting coincidental unrelated audio (e.g. a door slam near a person stretching). Widening the gate to > 200 ms increases false positives; narrowing to < 80 ms misses real events at the edge of the detection range.
+**Answer:** The temporal coincidence gate (`GATE_S = 1.5` in `edge/fusion.py`) requires that the audio flag (S_t ≥ 0.70, sustained ≥ 0.5s) and the vision flag (K_t ≥ 0.62, sustained ≥ 0.4s) both fire within any **1.5-second window**. The 1.5s window is chosen deliberately wider than a minimal reaction time: physical assault events often have a brief escalation phase (shove → scream → grapple) spanning 0.5–1.2 seconds, so a window narrower than 1.0s would miss multi-step assaults. The 1.5s upper bound prevents false coincidences — a vehicle horn and an unrelated sprint are unlikely to both sustain above threshold for 1.5 consecutive seconds. Additionally, a **10-second cooldown** (`COOLDOWN_S = 10.0`) after each alert prevents repeated firing, with an **escalation override** (threshold Δ ≥ 0.15) for worsening events within the cooldown.
 
 **Evidence:** `edge/fusion.py::TemporalCoincidenceGate`, `results/Benchmark_Execution_Logs.txt` — FP analysis vs Δt sweep
 
