@@ -5,8 +5,10 @@ __pycache__/
 .env
 data/raw/
 data/clips/
+!data/clips/synthetic_short.mp4
 data/audio/
 *.mp4
+!data/clips/synthetic_short.mp4
 *.wav
 *.engine
 results/tmp/

@@ -82,6 +82,16 @@ class TestIT05_ReplaySyntheticNoCrash:
         config_path = str(project_root / "configs" / "cpu.yaml")
         synthetic_clip = str(project_root / "data" / "clips" / "synthetic_short.mp4")
 
+        if not Path(synthetic_clip).exists():
+            import cv2
+            Path(synthetic_clip).parent.mkdir(parents=True, exist_ok=True)
+            fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+            out = cv2.VideoWriter(synthetic_clip, fourcc, 10.0, (640, 480))
+            for _ in range(15):
+                frame = np.zeros((480, 640, 3), dtype=np.uint8)
+                out.write(frame)
+            out.release()
+
         assert Path(synthetic_clip).exists(), f"Synthetic clip not found: {synthetic_clip}"
 
         config = load_config(config_path)
