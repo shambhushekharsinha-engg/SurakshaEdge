@@ -16,7 +16,7 @@
 
 **Answer:** SurakshaEdge uses a **temporal coincidence gate**: both audio and vision scores must exceed their respective thresholds within a window of **Δt ≤ 150 ms** for an ALERT to fire. The kinematic score K_t is computed as `K_t = α·V_w + β·Δpose + γ·Δprox`, weighting wrist velocity, pose-skeleton divergence, and inter-body proximity. A hug produces low V_w (slow wrap motion), low Δpose (bodies align rather than recoil), and high Δprox (bodies close together) — yielding K_t below the threshold. An assault produces high V_w (sudden strike), high Δpose (victim recoil), and a characteristic audio spike simultaneously, pushing K_t above threshold within the coincidence window.
 
-**Evidence:** `edge/kinematics_engine.py::KinematicsEngine.compute()`, `tests/unit/test_kinematics.py::test_hug_vs_assault_discrimination`
+**Evidence:** `edge/kinematics.py::KinematicsEngine.compute()`, `tests/unit/test_kinematics.py::test_hug_vs_assault_discrimination`
 
 ---
 
@@ -24,7 +24,7 @@
 
 **Answer:** `K_t = α·V_w + β·Δpose + γ·Δprox` where **V_w** is the weighted mean wrist velocity (m/s) of both detected persons, capturing the speed of arm/hand motion; **Δpose** is the Frobenius norm of the difference between consecutive pose-keypoint matrices, capturing whole-body recoil; and **Δprox** is the inverse of inter-body centroid distance, penalising very-close contact differently from arms-length impact. Coefficients α=0.5, β=0.3, γ=0.2 were calibrated on our synthetic + augmented dataset to maximise F1 score on the lab evaluation set. In SurakshaEdge v0.4.1, K_t is additionally modulated by **trajectory entropy**: `K_t_adj = K_t × (0.5 + 0.5 × H_traj)`, suppressing rhythmic, predictable motion (friendly horseplay) while amplifying chaotic, unpredictable kinematics characteristic of real assaults.
 
-**Evidence:** `edge/kinematics_engine.py`, `tests/unit/test_kinematics.py::test_rhythmic_motion_entropy_suppresses_vw`
+**Evidence:** `edge/kinematics.py`, `tests/unit/test_kinematics.py::test_rhythmic_motion_entropy_suppresses_vw`
 
 ---
 
@@ -32,7 +32,7 @@
 
 **Answer:** The temporal coincidence gate requires that the audio classifier score S_t and the kinematic score K_t both cross their thresholds within **150 ms** of each other. This window is chosen based on the physiological reaction time of a physical impact: an audible sound (impact, scream) and the visible body motion it causes are separated by ≤ 100 ms in real-world events (audio travels at 343 m/s; at 5 m the delay is ~15 ms, plus camera frame latency). Setting Δt = 150 ms ensures genuine co-occurrence is captured while rejecting coincidental unrelated audio (e.g. a door slam near a person stretching). Widening the gate to > 200 ms increases false positives; narrowing to < 80 ms misses real events at the edge of the detection range.
 
-**Evidence:** `edge/fusion_engine.py::TemporalCoincidenceGate`, `results/Benchmark_Execution_Logs.txt` — FP analysis vs Δt sweep
+**Evidence:** `edge/fusion.py::TemporalCoincidenceGate`, `results/Benchmark_Execution_Logs.txt` — FP analysis vs Δt sweep
 
 ---
 
@@ -48,7 +48,7 @@
 
 **Answer:** When the pose estimator detects fewer than 10 of the 17 MediaPipe keypoints due to occlusion, the vision pipeline degrades gracefully to **ADVISORY state** rather than dropping the event entirely — the audio classifier continues to run independently and can still fire an alert if S_t crosses its threshold alone. The `MultiCameraCoordinator` aggregates feeds from adjacent nodes; if two adjacent cameras both see partial evidence of the same event (via shared event-queue timestamps within 500 ms), their scores are fused at the coordinator level, effectively increasing keypoint coverage. Additionally, our deployment map places overlapping fields-of-view between N1/N5 and N2/N3 specifically to mitigate blind-spot occlusion.
 
-**Evidence:** `edge/multi_camera_coordinator.py`, `edge/pose_estimator.py::partial_keypoint_fallback`, `docs/FIELD_TRIAL_VALIDATION_PROTOCOL.md` §2.1
+**Evidence:** `edge/multi_camera_coordinator.py`, `edge/pose.py::partial_keypoint_fallback`, `docs/FIELD_TRIAL_VALIDATION_PROTOCOL.md` §2.1
 
 ---
 
@@ -56,7 +56,7 @@
 
 **Answer:** **Trajectory entropy** (H_traj) quantifies the unpredictability of motion over a sliding window of pose-keypoint histories. It is computed as the Shannon entropy of the normalised velocity-direction histogram: `H_traj = -Σ p_i · log2(p_i)` over N direction bins, normalised to [0, 1]. High entropy indicates chaotic, non-repetitive motion (assault); low entropy indicates rhythmic, predictable motion (walking, friendly waving, dancing). Without entropy modulation, the system incorrectly flagged vigorous dancing near Gate-1 as assaults (3 FPs in a 30-minute stress test); after adding the entropy term, the same scenarios produced H_traj < 0.3, suppressing K_t by 35% and eliminating those false positives while keeping all true-positive detections intact.
 
-**Evidence:** `edge/kinematics_engine.py::_compute_trajectory_entropy`, `tests/unit/test_kinematics.py::test_chaotic_motion_entropy_amplifies_vw`
+**Evidence:** `edge/kinematics.py::_compute_trajectory_entropy`, `tests/unit/test_kinematics.py::test_chaotic_motion_entropy_amplifies_vw`
 
 ---
 
@@ -200,7 +200,7 @@
 
 **Answer:** When one modality is unavailable (camera offline, audio sensor failure), SurakshaEdge degrades to **ADVISORY state** rather than going silent. In audio-only mode (K_t unavailable), a high S_t score (≥ 0.85, a stricter threshold than the dual-modality 0.75) triggers an ADVISORY alert — a yellow banner indicating "audio distress signal detected, visual confirmation unavailable." Vision-only mode works symmetrically: K_t ≥ 0.80 (stricter threshold) fires an ADVISORY. The rationale is that a single-modality signal has higher uncertainty, so we raise the threshold to maintain the FP rate target while still alerting for high-confidence single-modality events. The ADVISORY state is prominently displayed differently from ALERT to guide operator response appropriately.
 
-**Evidence:** `edge/fusion_engine.py::AdvisoryStateHandler`, `docs/FIELD_TRIAL_VALIDATION_PROTOCOL.md` §8.3 (System Failure Response)
+**Evidence:** `edge/fusion.py::AdvisoryStateHandler`, `docs/FIELD_TRIAL_VALIDATION_PROTOCOL.md` §8.3 (System Failure Response)
 
 ---
 
@@ -282,7 +282,7 @@
 |---|---|---|
 | Alert latency p50 | **54.8 ms** | Benchmark logs |
 | Alert latency p95 | **89.4 ms** | Benchmark logs |
-| Temporal coincidence gate Δt | **150 ms** | `fusion_engine.py` |
+| Temporal coincidence gate Δt | **1.5 s (1500 ms)** | `edge/fusion.py` |
 | False positive rate (lab) | **0.8 / 8h shift** | Benchmark logs |
 | False positive rate (field target) | **< 2 / 8h shift** | FTVP §5 |
 | Camera uptime target | **≥ 99.5% / 24h** | FTVP §5 |

@@ -23,3 +23,8 @@ models/yolov8*.onnx
 dist/
 build/
 docs/ENVIRONMENT.md
+
+# Scratch / temp scripts
+scratch/
+scripts/_fix_viva.py
+scripts/patch_dashboard_arch.py
