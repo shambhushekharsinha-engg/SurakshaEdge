@@ -24,7 +24,7 @@ import random
 import threading
 import time
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -78,8 +78,8 @@ class _CameraWorker:
 
         # Try importing real edge modules; fall back to mock pipeline
         try:
-            from edge.kinematics import KinematicsEngine
             from edge.fusion import FusionGate
+            from edge.kinematics import KinematicsEngine
             self._kinematics = KinematicsEngine()
             self._gate = FusionGate()
             self._real_pipeline = True
@@ -153,6 +153,7 @@ class _CameraWorker:
     def _process_real(self, frame_idx: int, ts_ns: int, rng: random.Random):
         """Real pipeline: synthetic tracks → KinematicsEngine → FusionGate."""
         import numpy as np
+
         from edge.pose import Track
 
         # Generate 1-2 synthetic persons

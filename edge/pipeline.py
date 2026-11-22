@@ -11,23 +11,23 @@ from __future__ import annotations
 import argparse
 import logging
 import os
+import os as _os
 import queue
 import sys
 import threading
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 import yaml
 
-import os as _os
 _os.environ.setdefault("MPLCONFIGDIR", _os.path.join(_os.path.expanduser("~"), ".config", "matplotlib"))
 
-from .ingest import AudioChunk, AudioIngest, Frame, VideoIngest
-from .pose import PoseEstimator
-from .kinematics import KinematicsEngine
 from .audio import AudioScorer
 from .fusion import FusionGate
+from .ingest import AudioChunk, AudioIngest, Frame, VideoIngest
+from .kinematics import KinematicsEngine
+from .pose import PoseEstimator
 from .privacy import PrivacyManager
 
 logging.basicConfig(

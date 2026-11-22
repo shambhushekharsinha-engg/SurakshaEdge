@@ -2,11 +2,13 @@
 Unit tests for encryption (UT-10, UT-11).
 """
 import os
-import pytest
 import sys
+
+import pytest
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 
-from surakshaedge.edge.privacy import encrypt_payload, decrypt_payload
+from surakshaedge.edge.privacy import decrypt_payload, encrypt_payload
 
 
 # UT-10: AES-GCM round trip
@@ -32,7 +34,6 @@ def test_tamper_detection():
 
 def test_nonce_uniqueness():
     """10,000 encryption calls should produce unique nonces."""
-    import base64
     nonces = set()
     for _ in range(10000):
         enc = encrypt_payload(b"data", b"")
@@ -53,6 +54,7 @@ def test_replay_protection_old_event():
 def test_replay_protection_fresh_event():
     """Recent events should pass replay check."""
     import datetime
+
     from surakshaedge.api.security import check_replay
     fresh_ts = datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00", "Z")
     assert check_replay(fresh_ts) is True

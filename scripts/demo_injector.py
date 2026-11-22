@@ -11,10 +11,9 @@ from __future__ import annotations
 
 import argparse
 import datetime
-import json
+import sys
 import time
 import uuid
-import sys
 
 
 def make_event(camera_id: str, tier: str, K_t: float, S_t: float, dt_s: float, gps: dict) -> dict:

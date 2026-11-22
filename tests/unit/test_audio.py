@@ -1,12 +1,14 @@
 """
 Unit tests for the audio module (UT-07, UT-08).
 """
+import os
+import sys
+
 import numpy as np
-import pytest
-import sys, os
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 
-from surakshaedge.edge.audio import extract_mfcc, AudioScorer, SAMPLE_RATE, N_MFCC
+from surakshaedge.edge.audio import N_MFCC, SAMPLE_RATE, AudioScorer, extract_mfcc
 
 
 # UT-07: MFCC shape

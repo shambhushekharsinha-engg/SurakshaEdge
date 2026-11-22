@@ -5,17 +5,15 @@ Replay test scenarios through the pipeline end-to-end.
 from __future__ import annotations
 
 import sys
-import time
 from pathlib import Path
 
-import pytest
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
-from surakshaedge.edge.kinematics import KinematicsEngine
-from surakshaedge.edge.audio import AudioScorer, SAMPLE_RATE
+from surakshaedge.edge.audio import AudioScorer
 from surakshaedge.edge.fusion import FusionGate
+from surakshaedge.edge.kinematics import KinematicsEngine
 from surakshaedge.edge.pose import KP, Track
 
 

@@ -11,11 +11,13 @@ Pipeline:
 Requirements: moviepy, Pillow, edge-tts
 """
 from __future__ import annotations
-import os, sys
-import numpy as np
+
+import os
 from pathlib import Path
-from PIL import Image, ImageDraw, ImageFont
+
+import numpy as np
 import soundfile as sf
+from PIL import Image, ImageDraw, ImageFont
 
 # ── Paths ────────────────────────────────────────────────────────────────────
 ROOT         = Path(__file__).resolve().parents[1]
@@ -195,8 +197,7 @@ def get_audio_duration(filename: str) -> float:
 
 
 def build_video():
-    from moviepy import ImageSequenceClip, AudioFileClip, concatenate_audioclips, ColorClip
-    import moviepy
+    from moviepy import AudioFileClip, ImageSequenceClip, concatenate_audioclips
 
     print(f"Building SurakshaEdge Demo Video → {OUTPUT_PATH}")
     print(f"Target: {TOTAL_TARGET}s (4:50)")

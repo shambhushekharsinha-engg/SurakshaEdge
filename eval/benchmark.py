@@ -22,10 +22,10 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 
 def run_benchmark(n_frames: int = 1000, device: str = "cpu", warmup: int = 100, imgsz: int = 640):
     sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-    from surakshaedge.edge.pose import PoseEstimator
-    from surakshaedge.edge.kinematics import KinematicsEngine
-    from surakshaedge.edge.audio import AudioScorer, SAMPLE_RATE
+    from surakshaedge.edge.audio import SAMPLE_RATE, AudioScorer
     from surakshaedge.edge.fusion import FusionGate
+    from surakshaedge.edge.kinematics import KinematicsEngine
+    from surakshaedge.edge.pose import PoseEstimator
 
     model_path = "models/yolov8s-pose.pt" if device == "cuda" else "models/yolov8n-pose.pt"
     pose       = PoseEstimator(model_path=model_path, imgsz=imgsz, device=device)

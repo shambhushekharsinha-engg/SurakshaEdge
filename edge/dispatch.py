@@ -32,14 +32,11 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 import queue
 import threading
 import time
-import urllib.parse
-import urllib.request
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -236,7 +233,8 @@ class AlertDispatcher:
     def _send_twilio(self, payload: DispatchPayload) -> bool:
         """Send SMS via Twilio REST API."""
         try:
-            import urllib.request, base64
+            import base64
+            import urllib.request
             sid = self._cfg["twilio_sid"]
             token = self._cfg["twilio_token"]
             from_num = self._cfg.get("twilio_from", "+15005550006")

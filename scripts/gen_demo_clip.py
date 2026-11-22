@@ -8,8 +8,10 @@ Usage:
     # Outputs: data/clips/DEMO_assault_T01.mp4
 """
 from __future__ import annotations
+
 import os
 import sys
+
 import numpy as np
 
 try:

@@ -14,13 +14,12 @@ from __future__ import annotations
 
 import collections
 import logging
-import time
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 import numpy as np
 
-from .pose import KP, MIN_TORSO_PX, CONF_THRESH, Track
+from .pose import CONF_THRESH, KP, MIN_TORSO_PX, Track
 
 logger = logging.getLogger(__name__)
 

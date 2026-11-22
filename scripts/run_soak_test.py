@@ -29,8 +29,8 @@ from typing import List
 # Try real edge imports; fall back to lightweight mocks
 # ---------------------------------------------------------------------------
 try:
-    from edge.kinematics import KinematicsEngine
     from edge.fusion import FusionGate
+    from edge.kinematics import KinematicsEngine
     from edge.pose import Track
     _REAL_IMPORTS = True
 except Exception:

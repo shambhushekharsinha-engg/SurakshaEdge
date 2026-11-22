@@ -9,9 +9,10 @@ Generates:
 Usage:
     python scripts/gen_synthetic_audio.py
 """
+from pathlib import Path
+
 import numpy as np
 import soundfile as sf
-from pathlib import Path
 
 SAMPLE_RATE = 16000
 rng = np.random.default_rng(42)

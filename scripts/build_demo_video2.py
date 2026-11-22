@@ -4,11 +4,13 @@ Uses video_frames2/ for the re-captured live screenshots.
 Identical to build_demo_video.py but reads from video_frames2.
 """
 from __future__ import annotations
-import os, sys
-import numpy as np
+
+import os
 from pathlib import Path
-from PIL import Image, ImageDraw, ImageFont
+
+import numpy as np
 import soundfile as sf
+from PIL import Image, ImageDraw, ImageFont
 
 ROOT         = Path('C:/SurakshaEdge/surakshaedge')
 FRAMES_DIR   = Path(r"C:\Users\shamb\.gemini\antigravity\brain\3dd2ba4e-ad18-4375-80c1-81e1f903c5bd\video_frames2")
@@ -107,7 +109,7 @@ def get_audio_dur(filename):
 
 
 def build():
-    from moviepy import ImageSequenceClip, AudioFileClip, concatenate_audioclips
+    from moviepy import AudioFileClip, ImageSequenceClip, concatenate_audioclips
     print(f"Building FINAL video -> {OUTPUT_PATH}")
 
     all_frames, audio_clips = [], []

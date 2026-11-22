@@ -11,9 +11,7 @@ from __future__ import annotations
 import datetime
 import json
 import os
-import sys
 import uuid
-from pathlib import Path
 
 import pytest
 
@@ -23,12 +21,12 @@ os.environ["SURAKSHA_API_TOKEN"] = "test-token"
 os.environ["SURAKSHA_KEY"] = "dGVzdGtleXRlc3RrZXl0ZXN0a2V5dGVzdGtleXQ="
 os.environ["SURAKSHA_AUDIO_MODE"] = "energy_fallback"
 
-import surakshaedge.api.main as _m           # noqa: E402
-from surakshaedge.api.store import EventStore  # noqa: E402
-from surakshaedge.api.schemas import (        # noqa: E402
-    EventPacketIn, SimulateIn,
+import surakshaedge.api.main as _m  # noqa: E402
+import surakshaedge.api.security as _sec  # noqa: E402
+from surakshaedge.api.schemas import (  # noqa: E402
+    SimulateIn,
 )
-import surakshaedge.api.security as _sec      # noqa: E402
+from surakshaedge.api.store import EventStore  # noqa: E402
 
 # ── Shared fixtures ───────────────────────────────────────────────────────
 

@@ -14,10 +14,9 @@ from __future__ import annotations
 import argparse
 import logging
 import os
-import time
 import warnings
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Tuple
 
 # Suppress PyTorch ONNX legacy-exporter DeprecationWarning (torch >= 2.9).
 # We intentionally use dynamo=False to avoid requiring onnxscript.
@@ -87,7 +86,8 @@ def load_dataset(data_dir: str) -> Tuple[np.ndarray, np.ndarray]:
     Returns (X, y) where X is (N, 1, 40, 98) float32, y is (N,) float32.
     """
     import soundfile as sf
-    from surakshaedge.edge.audio import extract_mfcc, SAMPLE_RATE
+
+    from surakshaedge.edge.audio import SAMPLE_RATE, extract_mfcc
 
     X, y = [], []
     data_path = Path(data_dir)

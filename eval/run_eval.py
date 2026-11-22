@@ -7,13 +7,11 @@ from __future__ import annotations
 
 import argparse
 import csv
-import json
 import logging
-import os
 import sys
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import numpy as np
 
@@ -126,13 +124,13 @@ class EvalRunner:
         """
         # Import pipeline modules
         try:
+
             import yaml
-            import queue as q_mod
             sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-            from surakshaedge.edge.pose import PoseEstimator
-            from surakshaedge.edge.kinematics import KinematicsEngine
             from surakshaedge.edge.audio import AudioScorer
             from surakshaedge.edge.fusion import FusionGate
+            from surakshaedge.edge.kinematics import KinematicsEngine
+            from surakshaedge.edge.pose import PoseEstimator
 
             with open(self.config_path) as f:
                 config = yaml.safe_load(f)

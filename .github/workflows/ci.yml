@@ -1,7 +1,7 @@
 # GitHub Actions CI — SurakshaEdge
 # Runs on every push and PR to main:
 #   1. Lint with ruff
-#   2. Full 48-test suite
+#   2. Full 51-test suite
 #   3. Reports badge status
 
 name: CI
@@ -34,7 +34,7 @@ jobs:
           pip install ruff pytest pytest-asyncio pytest-mock
 
       - name: Lint — ruff
-        run: ruff check . --select E,F,W,I --ignore E501,W291,W293
+        run: ruff check .
 
       - name: Run test suite
         env:

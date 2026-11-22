@@ -2,13 +2,14 @@
 Unit tests for the kinematics module (UT-01 to UT-06).
 All tests use synthetic keypoints with known answers.
 """
-import numpy as np
-import pytest
-import sys
 import os
+import sys
+
+import numpy as np
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 
-from surakshaedge.edge.kinematics import KinematicsEngine, KScore
+from surakshaedge.edge.kinematics import KinematicsEngine
 from surakshaedge.edge.pose import KP, Track
 
 

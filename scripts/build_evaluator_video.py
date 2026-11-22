@@ -4,10 +4,15 @@ Native 1920x1080 @ 30 FPS · Ultra-low RAM usage (<100MB) via cv2.VideoWriter st
 Multiplexed with FFmpeg 7.1 and edge-tts calibrated Indian English narration.
 """
 from __future__ import annotations
-import os, sys, math, subprocess
+
+import math
+import os
+import subprocess
+import sys
+from pathlib import Path
+
 import cv2
 import numpy as np
-from pathlib import Path
 import soundfile as sf
 
 ROOT        = Path(r"C:\SurakshaEdge\surakshaedge")
@@ -336,12 +341,12 @@ def generate_video():
         pass
 
     final_size = OUTPUT_PATH.stat().st_size / (1024 * 1024)
-    print(f"\n=======================================================")
-    print(f"  SUCCESS! SENIOR EVALUATOR DEMO VIDEO COMPILED")
+    print("\n=======================================================")
+    print("  SUCCESS! SENIOR EVALUATOR DEMO VIDEO COMPILED")
     print(f"  Path: {OUTPUT_PATH}")
     print(f"  Duration: {total_dur:.1f}s ({int(total_dur//60)}m {int(total_dur%60):02d}s)")
     print(f"  Size: {final_size:.1f} MB")
-    print(f"=======================================================\n")
+    print("=======================================================\n")
 
 if __name__ == "__main__":
     generate_video()

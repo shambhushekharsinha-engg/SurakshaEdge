@@ -13,16 +13,16 @@ import time
 import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
-from fastapi import Depends, FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect, status
+from fastapi import Depends, FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
-from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, Response
+from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
+from fastapi.responses import HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from .middleware import RateLimitMiddleware, RequestLoggingMiddleware, SecurityHeadersMiddleware
-from .schemas import CameraOut, EventPacketIn, FeedbackIn, HealthOut, MetricsOut, SimulateIn
+from .schemas import EventPacketIn, FeedbackIn, SimulateIn
 from .security import check_replay, require_token
 from .store import EventStore
 

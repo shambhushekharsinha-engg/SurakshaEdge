@@ -2,8 +2,11 @@
 Unit tests for the fusion gate (UT-09) - truth table.
 Cases A–I per the PRD/Test Plan.
 """
+import os
+import sys
+
 import pytest
-import sys, os
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 
 from surakshaedge.edge.fusion import FusionGate

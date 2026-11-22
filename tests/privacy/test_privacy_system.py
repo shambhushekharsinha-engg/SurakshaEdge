@@ -16,8 +16,7 @@ import numpy as np
 import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
-from surakshaedge.edge.privacy import encrypt_payload, decrypt_payload, PrivacyManager
-
+from surakshaedge.edge.privacy import PrivacyManager, decrypt_payload, encrypt_payload
 
 # ---------------------------------------------------------------------------
 # PT-01: No image/video files written during sustained no-alert operation
@@ -79,7 +78,7 @@ def test_pt01_no_media_files_written_sustained(tmp_path):
         f"PT-01 FAILED: media files written during {soak_s}s no-alert run: {found_files}"
     )
     print(f"\nPT-01 PASSED: {frame_count} frames pushed over {soak_s}s, 0 media files written.")
-    print(f"  → For full 10-min test: SURAKSHA_PRIVACY_SOAK=600 pytest tests/privacy/ -v -s")
+    print("  → For full 10-min test: SURAKSHA_PRIVACY_SOAK=600 pytest tests/privacy/ -v -s")
 
 
 # PT-03: On alert, only an encrypted blob is produced (no plain media)

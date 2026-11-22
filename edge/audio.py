@@ -6,7 +6,6 @@ Falls back to a pretrained AudioSet/YAMNet-like baseline if available.
 from __future__ import annotations
 
 import logging
-import time
 from dataclasses import dataclass
 from typing import Optional
 
@@ -40,8 +39,8 @@ def extract_mfcc(pcm: np.ndarray, sr: int = SAMPLE_RATE) -> np.ndarray:
       short-time FFT → mel filterbank → log → DCT (type-II) → first N_MFCC rows.
     """
     try:
+        from scipy.fft import dct, fft
         from scipy.signal import get_window
-        from scipy.fft import fft, dct
 
         # --- STFT power spectrum ---
         window = get_window("hann", WIN_SAMPLES, fftbins=True).astype(np.float32)

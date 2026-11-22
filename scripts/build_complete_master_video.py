@@ -10,12 +10,17 @@ Features:
   7. Exact duration: 295.1s (4m 55s) — 4.9s safety margin below strict 5:00 ceiling
 """
 from __future__ import annotations
-import os, sys, math, subprocess
+
+import math
+import os
+import subprocess
+import sys
+from pathlib import Path
+
 import cv2
 import numpy as np
-from pathlib import Path
-from PIL import Image, ImageDraw, ImageFont
 import soundfile as sf
+from PIL import Image, ImageDraw, ImageFont
 
 ROOT        = Path(r"C:\SurakshaEdge\surakshaedge")
 FRAMES_DIR  = Path(r"C:\Users\shamb\.gemini\antigravity\brain\3dd2ba4e-ad18-4375-80c1-81e1f903c5bd\video_frames2")
@@ -233,7 +238,7 @@ def draw_cctv_simulation(c_w: int, c_h: int, t: float, scenario: str) -> np.ndar
     return c
 
 def generate_master_video():
-    print(f"🎬 Compiling Complete Master Demo Video with Thumbnail & Outro...")
+    print("🎬 Compiling Complete Master Demo Video with Thumbnail & Outro...")
 
     # Load audio with intro and outro silence padding
     audio_chunks = []
@@ -373,13 +378,13 @@ def generate_master_video():
         pass
 
     final_size = OUTPUT_PATH.stat().st_size / (1024 * 1024)
-    print(f"\n=======================================================")
-    print(f"  SUCCESS! MASTER DEMO VIDEO READY")
+    print("\n=======================================================")
+    print("  SUCCESS! MASTER DEMO VIDEO READY")
     print(f"  Path: {OUTPUT_PATH}")
     print(f"  Duration: {total_dur:.1f}s ({int(total_dur//60)}m {int(total_dur%60):02d}s)")
     print(f"  Size: {final_size:.1f} MB")
-    print(f"  Features: Beautiful Intro Card + 100% Pure Project Screen + Outro Card")
-    print(f"=======================================================\n")
+    print("  Features: Beautiful Intro Card + 100% Pure Project Screen + Outro Card")
+    print("=======================================================\n")
 
 if __name__ == "__main__":
     generate_master_video()

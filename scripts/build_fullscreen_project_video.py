@@ -8,10 +8,15 @@ SurakshaEdge — Fullscreen Project Demo Video Generator
 - Perfect audio sync: 288.6s (4m 48s) using calibrated en-IN-PrabhatNeural voiceover
 """
 from __future__ import annotations
-import os, sys, math, subprocess
+
+import math
+import os
+import subprocess
+import sys
+from pathlib import Path
+
 import cv2
 import numpy as np
-from pathlib import Path
 import soundfile as sf
 
 ROOT        = Path(r"C:\SurakshaEdge\surakshaedge")
@@ -134,7 +139,7 @@ def draw_cctv_simulation(c_w: int, c_h: int, t: float, scenario: str) -> np.ndar
     return c
 
 def generate_fullscreen_video():
-    print(f"🎬 Compiling Fullscreen Project Video (No Sidebars)...")
+    print("🎬 Compiling Fullscreen Project Video (No Sidebars)...")
 
     # Load audio
     all_audio = []
@@ -241,13 +246,13 @@ def generate_fullscreen_video():
         pass
 
     final_size = OUTPUT_PATH.stat().st_size / (1024 * 1024)
-    print(f"\n=======================================================")
-    print(f"  SUCCESS! FULLSCREEN PROJECT VIDEO READY")
+    print("\n=======================================================")
+    print("  SUCCESS! FULLSCREEN PROJECT VIDEO READY")
     print(f"  Path: {OUTPUT_PATH}")
     print(f"  Duration: {total_dur:.1f}s ({int(total_dur//60)}m {int(total_dur%60):02d}s)")
     print(f"  Size: {final_size:.1f} MB")
-    print(f"  Display: 100% Pure Project Screen (No Sidebars)")
-    print(f"=======================================================\n")
+    print("  Display: 100% Pure Project Screen (No Sidebars)")
+    print("=======================================================\n")
 
 if __name__ == "__main__":
     generate_fullscreen_video()

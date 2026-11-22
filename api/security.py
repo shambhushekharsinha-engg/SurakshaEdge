@@ -4,10 +4,9 @@ SurakshaEdge - API security (bearer token auth, replay protection)
 from __future__ import annotations
 
 import os
-import time
-from functools import lru_cache
+
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 _TOKEN_ENV = "SURAKSHA_API_TOKEN"
 REPLAY_WINDOW_S = 30.0

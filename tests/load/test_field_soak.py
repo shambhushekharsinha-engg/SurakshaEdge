@@ -18,17 +18,16 @@ import pathlib
 import random
 import tempfile
 import time
-from typing import List, Optional
+from typing import List
 
 import psutil
-import pytest
 
 # ---------------------------------------------------------------------------
 # Attempt real imports; fall back to lightweight mocks for CI / no-hardware
 # ---------------------------------------------------------------------------
 try:
-    from edge.kinematics import KinematicsEngine, KScore
-    from edge.fusion import FusionGate, Decision
+    from edge.fusion import FusionGate
+    from edge.kinematics import KinematicsEngine
     from edge.pose import Track
     _REAL_IMPORTS = True
 except Exception:  # pragma: no cover
