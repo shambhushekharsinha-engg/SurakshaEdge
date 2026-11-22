@@ -223,7 +223,11 @@ async def custom_redoc():
 async def root():
     dashboard_path = Path(__file__).parent.parent / "dashboard" / "index.html"
     if dashboard_path.exists():
-        return HTMLResponse(content=dashboard_path.read_text(encoding="utf-8"))
+        content = dashboard_path.read_text(encoding="utf-8")
+        map_token = os.environ.get("SURAKSHA_MAPBOX_TOKEN", "").strip()
+        if map_token:
+            content = content.replace("window._ENV_MAP_TOKEN = '';", f"window._ENV_MAP_TOKEN = '{map_token}';")
+        return HTMLResponse(content=content)
     return HTMLResponse(content="<h1>SurakshaEdge API</h1><p>Dashboard not found. Open /docs for API.</p>")
 
 

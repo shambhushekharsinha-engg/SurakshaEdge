@@ -2738,7 +2738,7 @@ function loadSettings() {
     if (s.autoclear !== undefined) document.getElementById('autoclear-sel').value = s.autoclear;
     if (s.tile    !== undefined) { currentTileKey = s.tile; document.getElementById('tile-sel').value = s.tile; }
     else { currentTileKey = 'dark'; }
-    const savedMapKey = localStorage.getItem('suraksha_map_key');
+    const savedMapKey = localStorage.getItem('suraksha_map_key') || (window._ENV_MAP_TOKEN ? '••••••••••••' : '');
     const mapKeyInp = document.getElementById('map-api-key');
     if (mapKeyInp && savedMapKey) mapKeyInp.value = savedMapKey;
     if (s.sidebar !== undefined) sidebarOpen = s.sidebar;
@@ -2939,10 +2939,11 @@ if (typeof L === 'undefined') {
 }
 const map = (typeof L !== 'undefined') ? L.map('map', { zoomControl: true }).setView([CENTER_LAT, CENTER_LON], 16) : null;
 
+window._ENV_MAP_TOKEN = '';
 let TILES = {};
 
 function buildTileLayers(token) {
-  token = token || localStorage.getItem('suraksha_map_key') || '';
+  token = token || window._ENV_MAP_TOKEN || localStorage.getItem('suraksha_map_key') || '';
   if (token && token.startsWith('pk.')) {
     // Mapbox 4K Retina Provider
     TILES = {
