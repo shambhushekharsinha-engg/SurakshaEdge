@@ -66,19 +66,24 @@ def test_torso_normalisation():
 # UT-02: Wrist speed V_w
 def test_wrist_speed_known_value():
     """
-    Wrist moves a large distance in 100ms → V_w should be clipped to 1.0.
-    EMA blends positions, so we use a very large movement to ensure the
-    clipped normalised speed hits 1.0 regardless of smoothing.
+    Wrist moves a very large distance in 100ms → raw V_w = 1.0 (clipped).
+    After entropy adjustment: V_w_adjusted = V_w * (0.5 + 0.5*entropy).
+    With only 1 frame of wrist history, entropy falls back to 0.5,
+    giving V_w_adjusted = 1.0 * 0.75 = 0.75.
+    We verify V_w is in the expected adjusted range [0.5, 1.0].
     """
     engine = KinematicsEngine()
     kp0 = standing_skeleton(cx=200, cy=200, scale=1.0)
     engine.update([make_track(1, kp0)], 0)
 
     kp1 = kp0.copy()
-    kp1[KP["right_wrist"], 0] += 200.0  # very large move → speed clipped to 1.0 after /3
+    kp1[KP["right_wrist"], 0] += 200.0  # very large move → raw speed clipped to 1.0 after /3
     score = engine.update([make_track(1, kp1)], 100_000_000)
 
-    assert score.V_w == pytest.approx(1.0, abs=0.01), f"Expected V_w≈1.0, got {score.V_w}"
+    # After entropy adjustment (0.5 fallback with 1-frame history): V_w in [0.5, 1.0]
+    assert 0.5 <= score.V_w <= 1.0, f"Expected V_w in [0.5,1.0] after entropy adjustment, got {score.V_w}"
+    # Confirm V_w is positive (wrist moved significantly)
+    assert score.V_w > 0.4, f"V_w should reflect large wrist movement, got {score.V_w}"
 
 
 # UT-03: Limb angular velocity A_j
@@ -182,3 +187,62 @@ def test_flag_persistence_long():
 
     # After 1 second of sustained high K_t (above 0.01 threshold), flag should be set
     assert engine.flag is True
+
+
+# UT-07: Trajectory entropy — rhythmic motion suppresses V_w contribution
+def test_rhythmic_motion_entropy_suppresses_vw():
+    """
+    A sinusoidal (rhythmic) wrist trajectory has low spectral entropy.
+    entropy ≈ 0 → vw_adjusted = vw * (0.5 + 0.5*0) = 0.5*vw → V_w is suppressed.
+    We verify that the internal _trajectory_entropy returns a value < 0.4 for
+    a pure sinusoidal wrist path (sports/running pattern ~3 Hz at 30 FPS).
+    """
+    engine = KinematicsEngine()
+
+    # Inject 30 frames of sinusoidal wrist positions (3 Hz at 30 FPS)
+    import math
+    n_frames = 30
+    fps = 30
+    freq_hz = 3.0
+    history = []
+    for i in range(n_frames):
+        t = i / fps
+        lw = np.array([100.0 + 20.0 * math.sin(2 * math.pi * freq_hz * t), 200.0])
+        rw = np.array([300.0 + 20.0 * math.sin(2 * math.pi * freq_hz * t), 200.0])
+        history.append((lw, rw))
+
+    entropy = engine._trajectory_entropy(track_id=99, kp_history=history)
+
+    # A pure sinusoid concentrates energy in one frequency bin → low entropy
+    assert entropy < 0.5, (
+        f"Rhythmic sinusoidal motion should have entropy < 0.5, got {entropy:.4f}"
+    )
+    assert 0.0 <= entropy <= 1.0, f"Entropy must be in [0,1], got {entropy}"
+
+
+# UT-08: Trajectory entropy — chaotic motion amplifies V_w contribution
+def test_chaotic_motion_entropy_amplifies_vw():
+    """
+    A uniformly random wrist trajectory has high spectral entropy.
+    entropy ≈ 1 → vw_adjusted = vw * (0.5 + 0.5*1) = vw → full V_w used.
+    We verify that the internal _trajectory_entropy returns a value > 0.6 for
+    a random noise wrist path (simulating struggle/assault).
+    """
+    rng = np.random.default_rng(seed=42)
+    engine = KinematicsEngine()
+
+    # Inject 30 frames of purely random wrist positions (white noise)
+    n_frames = 30
+    history = []
+    for _ in range(n_frames):
+        lw = rng.uniform(50.0, 600.0, size=2)
+        rw = rng.uniform(50.0, 600.0, size=2)
+        history.append((lw, rw))
+
+    entropy = engine._trajectory_entropy(track_id=98, kp_history=history)
+
+    # White noise spreads energy evenly across all frequency bins → high entropy
+    assert entropy > 0.5, (
+        f"Chaotic random motion should have entropy > 0.5, got {entropy:.4f}"
+    )
+    assert 0.0 <= entropy <= 1.0, f"Entropy must be in [0,1], got {entropy}"

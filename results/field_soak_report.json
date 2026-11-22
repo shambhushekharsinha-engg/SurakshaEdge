@@ -1,0 +1,15 @@
+{
+  "frame_count": 10000,
+  "median_latency_ms": 3.5041,
+  "p95_latency_ms": 5.3563,
+  "ram_delta_mb": 0.4141,
+  "disk_write_count": 0,
+  "new_video_files_found": [],
+  "real_imports": false,
+  "rss_limit_mb": 10.0,
+  "latency_limit_ms": 100.0,
+  "leak_ok": true,
+  "latency_ok": true,
+  "privacy_ok": true,
+  "passed": true
+}

@@ -2,9 +2,13 @@
 SurakshaEdge - Kinematics module
 Computes K_t = 0.4*V_w + 0.3*A_j + 0.3*Q_p from track history.
 
-V_w: normalized wrist speed (torso-lengths per second)
+V_w: normalized wrist speed (torso-lengths per second), entropy-adjusted.
 A_j: limb angular velocity (normalised)
 Q_p: close-contact flag (IoU + closing velocity)
+
+Trajectory entropy adjustment: V_w is modulated by FFT-based spectral entropy
+of the wrist trajectory. Rhythmic (low-entropy) motion suppresses V_w;
+chaotic (high-entropy) motion amplifies V_w toward its full value.
 """
 from __future__ import annotations
 
@@ -65,6 +69,8 @@ class KinematicsEngine:
 
         # Per-track state: track_id -> {"kp": smoothed keypoints, "ts_ns": last ts}
         self._track_state: Dict[int, dict] = {}
+        # Per-track wrist position history for entropy computation: track_id -> deque of (lw_xy, rw_xy)
+        self._wrist_history: Dict[int, collections.deque] = {}
         # Last few K_t values for median smoothing
         self._kt_history: collections.deque = collections.deque(maxlen=MEDIAN_WINDOW)
         # Flag state
@@ -95,6 +101,13 @@ class KinematicsEngine:
             prev = self._track_state.get(track.track_id)
             self._track_state[track.track_id] = {"kp": kp, "ts_ns": ts_ns}
 
+            # Record wrist positions for entropy
+            lw = kp[KP["left_wrist"], :2]
+            rw = kp[KP["right_wrist"], :2]
+            if track.track_id not in self._wrist_history:
+                self._wrist_history[track.track_id] = collections.deque(maxlen=30)
+            self._wrist_history[track.track_id].append((lw.copy(), rw.copy()))
+
             if prev is None:
                 continue  # Need two frames to compute velocity
 
@@ -105,7 +118,14 @@ class KinematicsEngine:
 
             vw = self._wrist_speed(kp, prev_kp, dt_s, torso_len)
             aj = self._limb_angular_velocity(kp, prev_kp, dt_s)
-            V_w_max = max(V_w_max, vw)
+
+            # Apply trajectory entropy adjustment: chaotic motion → full V_w,
+            # rhythmic/sports motion → suppressed V_w.
+            wrist_hist = list(self._wrist_history.get(track.track_id, []))
+            entropy = self._trajectory_entropy(track.track_id, wrist_hist)
+            vw_adjusted = vw * (0.5 + 0.5 * entropy)
+
+            V_w_max = max(V_w_max, vw_adjusted)
             A_j_max = max(A_j_max, aj)
             scores_per_track.append(track.track_id)
 
@@ -279,3 +299,56 @@ class KinematicsEngine:
                  if (ts_ns - st["ts_ns"]) > max_age_ns]
         for tid in stale:
             del self._track_state[tid]
+            self._wrist_history.pop(tid, None)
+
+    def _trajectory_entropy(self, track_id: int, kp_history: list) -> float:
+        """
+        Compute FFT-based spectral entropy of wrist trajectory over last 30 frames.
+        Rhythmic motion (sports ~2-4 Hz) → low entropy → suppresses V_w contribution.
+        Chaotic struggle → high entropy → amplifies V_w contribution.
+        Returns: entropy scalar [0.0, 1.0]
+        """
+        if len(kp_history) < 5:
+            return 0.5
+
+        N = min(30, len(kp_history))
+        frames = kp_history[-N:]
+
+        # Collect wrist X/Y positions (use left wrist; fallback right if NaN)
+        xs = []
+        ys = []
+        for entry in frames:
+            lw, rw = entry  # each is a 2-element array [x, y]
+            if not np.any(np.isnan(lw)):
+                xs.append(lw[0])
+                ys.append(lw[1])
+            elif not np.any(np.isnan(rw)):
+                xs.append(rw[0])
+                ys.append(rw[1])
+            else:
+                xs.append(0.0)
+                ys.append(0.0)
+
+        xs = np.array(xs, dtype=float)
+        ys = np.array(ys, dtype=float)
+
+        # Compute PSD via FFT for X and Y, combine
+        fft_x = np.fft.rfft(xs - xs.mean())
+        fft_y = np.fft.rfft(ys - ys.mean())
+        psd = np.abs(fft_x) ** 2 + np.abs(fft_y) ** 2
+
+        total = psd.sum()
+        if total < 1e-12:
+            return 0.5  # no motion → neutral
+
+        p = psd / total
+        # Shannon entropy
+        raw_entropy = -np.sum(p * np.log2(p + 1e-9))
+
+        # Normalise to [0, 1]
+        max_entropy = np.log2(len(p))
+        if max_entropy < 1e-12:
+            return 0.5
+
+        entropy = float(np.clip(raw_entropy / max_entropy, 0.0, 1.0))
+        return entropy
