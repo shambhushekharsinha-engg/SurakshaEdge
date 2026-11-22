@@ -1384,7 +1384,7 @@
       <button class="map-ctrl-btn" onclick="clearAlertMarkers()" title="Clear alert pins">🗺 Clear Alerts</button>
       <button class="map-ctrl-btn" onclick="showAllCameras()" title="Zoom to all cameras">📍 All Cameras</button>
       <button class="map-ctrl-btn" onclick="showZoneInfo()" title="Zone info">🔍 Zone Info</button>
-      <button class="map-ctrl-btn" id="tile-toggle-btn" onclick="toggleTile()">🗺 Street</button>
+      <button class="map-ctrl-btn" id="tile-toggle-btn" onclick="toggleTile()">🛰 Satellite</button>
     </div>
 
     <!-- Sidebar collapse toggle (desktop only) -->
@@ -2538,7 +2538,7 @@ let advCount      = 0;
 let muted         = false;
 let sirenVolume   = 0.70;
 let sidebarOpen   = true;
-let currentTileKey = 'street';
+let currentTileKey = 'satellite';
 let detailEvent   = null;   // currently shown event in detail panel
 let feedCards     = [];     // [{id, el, evt}]
 let mobileCards   = [];
@@ -2762,16 +2762,16 @@ const map = (typeof L !== 'undefined') ? L.map('map', { zoomControl: true }).set
 
 const TILES = map ? {
   street: L.tileLayer(
-    'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-    { attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors', maxZoom: 19, detectRetina: true }
+    'https://tiles.openfreemap.org/styles/liberty/{z}/{x}/{y}.png',
+    { attribution: '© <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a> © <a href="https://www.openstreetmap.org/copyright" target="_blank">OSM</a> contributors', maxZoom: 20, detectRetina: true }
   ),
   satellite: L.tileLayer(
     'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     { attribution: 'Tiles © Esri World Imagery', maxZoom: 19, detectRetina: true }
   ),
   dark: L.tileLayer(
-    'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-    { attribution: '© OpenStreetMap contributors (Tactical Ops)', maxZoom: 19, detectRetina: true }
+    'https://tiles.openfreemap.org/styles/liberty/{z}/{x}/{y}.png',
+    { attribution: '© <a href="https://openfreemap.org" target="_blank">OpenFreeMap</a> © OSM contributors (Tactical Ops)', maxZoom: 20, detectRetina: true }
   ),
 } : {};
 if (map) {
@@ -3628,7 +3628,7 @@ if (currentTileKey !== 'dark') {
   map.removeLayer(TILES.dark);
   TILES[currentTileKey].addTo(map);
   document.getElementById('tile-toggle-btn').textContent =
-    { dark: '🌙 Dark', satellite: '🛰 Satellite', street: '🗺 CartoDB' }[currentTileKey];
+    { dark: '🌙 Dark', satellite: '🛰 Satellite', street: '🗺 Street' }[currentTileKey];
 }
 
 // ── API Status Badge (polls /health every 30s) ───────────────────────────
